@@ -20,7 +20,7 @@ class Liability(BaseModel):
         frozen = True  # Make immutable
 
     def __repr__(self):
-        return f"Liability(t={self.time_years}Y, amount=${self.amount:,.0f})"
+        return f"Liability(t={self.time_years}Y, amount=€{self.amount:,.0f}k)"
 
 
 class Bond(BaseModel):
@@ -44,7 +44,7 @@ class Bond(BaseModel):
         frozen = True
 
     def __repr__(self):
-        return f"Bond({self.maturity_years}Y, {self.coupon_rate:.1%}, FV=${self.face_value:,.0f})"
+        return f"Bond({self.maturity_years}Y, {self.coupon_rate:.1%}, FV=€{self.face_value:,.0f}k)"
 
 
 class YieldCurve(BaseModel):

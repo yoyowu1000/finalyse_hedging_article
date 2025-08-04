@@ -108,13 +108,13 @@ class HedgingAnalyzer:
         )
 
         ax1.set_xlabel("Time (Years)", fontsize=12)
-        ax1.set_ylabel("Cash Flow ($)", fontsize=12)
+        ax1.set_ylabel("Cash Flow (€ thousands)", fontsize=12)
         ax1.set_title("Liability vs Asset Cash Flows", fontsize=14, fontweight="bold")
         ax1.set_xticks(x)
         ax1.set_xticklabels([f"{t:.1f}" for t in all_times])
         ax1.legend(fontsize=12)
         ax1.grid(True, alpha=0.3)
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"${x:,.0f}"))
+        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"€{x:,.0f}k"))
 
         # Add value labels on bars
         for bars in [bars1, bars2]:
@@ -122,7 +122,7 @@ class HedgingAnalyzer:
                 height = bar.get_height()
                 if height > 0:
                     ax1.annotate(
-                        f"${height:,.0f}",
+                        f"€{height:,.0f}k",
                         xy=(bar.get_x() + bar.get_width() / 2, height),
                         xytext=(0, 3),
                         textcoords="offset points",
@@ -139,7 +139,7 @@ class HedgingAnalyzer:
 
         bars3 = ax2.bar(x, mismatches, color=colors, alpha=0.8)
         ax2.set_xlabel("Time (Years)", fontsize=12)
-        ax2.set_ylabel("Cash Flow Mismatch ($)", fontsize=12)
+        ax2.set_ylabel("Cash Flow Mismatch (€ thousands)", fontsize=12)
         ax2.set_title(
             "Hedging Effectiveness: Cash Flow Mismatches",
             fontsize=14,
@@ -149,7 +149,7 @@ class HedgingAnalyzer:
         ax2.set_xticklabels([f"{t:.1f}" for t in all_times])
         ax2.axhline(y=0, color="black", linestyle="-", linewidth=1)
         ax2.grid(True, alpha=0.3)
-        ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"${x:,.0f}"))
+        ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"€{x:,.0f}k"))
 
         # Add value labels
         for bar in bars3:
@@ -294,8 +294,8 @@ class HedgingAnalyzer:
         ax4.axis("off")
         summary_text = f"""Hedging Performance Summary:
         
-Base Liability PV: ${base_liability_pv:,.0f}
-Base Asset PV: ${base_asset_pv:,.0f}
+Base Liability PV: €{base_liability_pv:,.0f}k
+Base Asset PV: €{base_asset_pv:,.0f}k
 Initial Hedge Ratio: {base_asset_pv / base_liability_pv:.4f}
 
 Tracking Error Statistics:

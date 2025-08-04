@@ -13,21 +13,21 @@ import numpy as np
 
 def create_insurance_liabilities():
     """Create realistic insurance liability profile."""
-    # Mix of different insurance products
+    # Mix of different insurance products (in thousands of euros)
     liabilities = [
         # Short-term death benefits
-        Liability(time_years=0.5, amount=500_000),
-        Liability(time_years=1, amount=1_000_000),
-        Liability(time_years=1.5, amount=750_000),
+        Liability(time_years=0.5, amount=500),  # €500k
+        Liability(time_years=1, amount=1_000),  # €1,000k
+        Liability(time_years=1.5, amount=750),  # €750k
         # Medium-term annuity payments
-        Liability(time_years=3, amount=2_500_000),
-        Liability(time_years=4, amount=2_200_000),
-        Liability(time_years=5, amount=1_800_000),
+        Liability(time_years=3, amount=2_500),  # €2,500k
+        Liability(time_years=4, amount=2_200),  # €2,200k
+        Liability(time_years=5, amount=1_800),  # €1,800k
         # Long-term endowments and pensions
-        Liability(time_years=7, amount=3_000_000),
-        Liability(time_years=10, amount=3_200_000),
-        Liability(time_years=15, amount=4_500_000),
-        Liability(time_years=20, amount=5_000_000),
+        Liability(time_years=7, amount=3_000),  # €3,000k
+        Liability(time_years=10, amount=3_200),  # €3,200k
+        Liability(time_years=15, amount=4_500),  # €4,500k
+        Liability(time_years=20, amount=5_000),  # €5,000k
     ]
     return liabilities
 
@@ -35,21 +35,22 @@ def create_insurance_liabilities():
 def create_bond_universe():
     """Create available bonds for investment."""
     # Government and corporate bonds with various maturities
+    # Face value of 1 = €1,000 (since we're working in thousands)
     bonds = [
         # Very short-term bonds for exact matching
-        Bond(maturity_years=0.5, coupon_rate=0.018, face_value=1000),
-        Bond(maturity_years=1.5, coupon_rate=0.023, face_value=1000),
+        Bond(maturity_years=0.5, coupon_rate=0.018, face_value=1),
+        Bond(maturity_years=1.5, coupon_rate=0.023, face_value=1),
         # Short-term bonds
-        Bond(maturity_years=1, coupon_rate=0.020, face_value=1000),
-        Bond(maturity_years=2, coupon_rate=0.025, face_value=1000),
+        Bond(maturity_years=1, coupon_rate=0.020, face_value=1),
+        Bond(maturity_years=2, coupon_rate=0.025, face_value=1),
         # Medium-term bonds
-        Bond(maturity_years=3, coupon_rate=0.028, face_value=1000),
-        Bond(maturity_years=5, coupon_rate=0.032, face_value=1000),
-        Bond(maturity_years=7, coupon_rate=0.035, face_value=1000),
+        Bond(maturity_years=3, coupon_rate=0.028, face_value=1),
+        Bond(maturity_years=5, coupon_rate=0.032, face_value=1),
+        Bond(maturity_years=7, coupon_rate=0.035, face_value=1),
         # Long-term bonds
-        Bond(maturity_years=10, coupon_rate=0.038, face_value=1000),
-        Bond(maturity_years=15, coupon_rate=0.042, face_value=1000),
-        Bond(maturity_years=20, coupon_rate=0.045, face_value=1000),
+        Bond(maturity_years=10, coupon_rate=0.038, face_value=1),
+        Bond(maturity_years=15, coupon_rate=0.042, face_value=1),
+        Bond(maturity_years=20, coupon_rate=0.045, face_value=1),
     ]
     return bonds
 
@@ -75,7 +76,7 @@ def main():
 
     # Calculate total liability value
     total_liability = sum(liability.amount for liability in liabilities)
-    print(f"Total Liability Amount: ${total_liability:,.0f}")
+    print(f"Total Liability Amount: €{total_liability:,.0f}k")
     print(f"Number of Liability Payments: {len(liabilities)}")
     print(f"Time Horizon: {max(liability.time_years for liability in liabilities)} years\n")
 
@@ -89,11 +90,11 @@ def main():
 
     if duration_result["success"]:
         print("✓ Optimization successful")
-        print(f"  Liability PV: ${duration_result['liability_pv']:,.0f}")
+        print(f"  Liability PV: €{duration_result['liability_pv']:,.0f}k")
         print(
             f"  Liability Duration: {duration_result['liability_duration']:.2f} years"
         )
-        print(f"  Portfolio PV: ${duration_result['portfolio_pv']:,.0f}")
+        print(f"  Portfolio PV: €{duration_result['portfolio_pv']:,.0f}k")
         print(
             f"  Portfolio Duration: {duration_result['portfolio_duration']:.2f} years"
         )
@@ -109,8 +110,8 @@ def main():
         for bond, qty in duration_result["bond_allocations"]:
             value = qty * bond.face_value
             total_invested += value
-            print(f"  - {bond}: {qty:,.0f} units (${value:,.0f})")
-        print(f"  Total Investment Required: ${total_invested:,.0f}")
+            print(f"  - {bond}: {qty:,.0f} units (€{value:,.0f}k)")
+        print(f"  Total Investment Required: €{total_invested:,.0f}k")
     else:
         print("✗ Duration matching optimization failed")
 
@@ -121,15 +122,15 @@ def main():
 
     if cashflow_result["success"]:
         print("✓ Optimization successful")
-        print(f"  Total Cost: ${cashflow_result['total_cost']:,.0f}")
+        print(f"  Total Cost: €{cashflow_result['total_cost']:,.0f}k")
 
         print("\n  Bond Allocations:")
         total_invested = 0
         for bond, qty in cashflow_result["bond_allocations"]:
             value = qty * bond.face_value
             total_invested += value
-            print(f"  - {bond}: {qty:,.0f} units (${value:,.0f})")
-        print(f"  Total Investment Required: ${total_invested:,.0f}")
+            print(f"  - {bond}: {qty:,.0f} units (€{value:,.0f}k)")
+        print(f"  Total Investment Required: €{total_invested:,.0f}k")
 
         # Compare costs
         duration_cost = (
