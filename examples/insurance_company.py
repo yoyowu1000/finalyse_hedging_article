@@ -3,12 +3,14 @@
 import sys
 from pathlib import Path
 
+# Add src directory to Python path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.models import Liability, Bond, YieldCurve
-from src.optimizer import HedgingOptimizer
-from src.analyzer import HedgingAnalyzer
 import numpy as np
+
+from src.analyzer import HedgingAnalyzer
+from src.models import Bond, Liability, YieldCurve
+from src.optimizer import HedgingOptimizer
 
 
 def create_insurance_liabilities():
@@ -64,7 +66,7 @@ def create_yield_curve():
     )
 
 
-def main():
+def main(display_charts: bool = False):
     """Run comprehensive insurance company hedging analysis."""
 
     print("=== Insurance Company Liability Hedging Analysis ===\n")
@@ -84,29 +86,25 @@ def main():
 
     # Run both optimization strategies
     optimizer = HedgingOptimizer(liabilities, bonds, yield_curve)
-    
+
     # First, create initial portfolio using maturity bucketing
     print("0. Initial Portfolio (Maturity Bucketing)")
     print("-" * 40)
     initial_result = optimizer.create_initial_portfolio()
-    
+
     if initial_result["success"]:
         print("✓ Initial portfolio created")
         print(f"  Liability PV: €{initial_result['liability_pv']:,.0f}k")
-        print(
-            f"  Liability Duration: {initial_result['liability_duration']:.2f} years"
-        )
+        print(f"  Liability Duration: {initial_result['liability_duration']:.2f} years")
         print(f"  Portfolio PV: €{initial_result['portfolio_pv']:,.0f}k")
-        print(
-            f"  Portfolio Duration: {initial_result['portfolio_duration']:.2f} years"
-        )
+        print(f"  Portfolio Duration: {initial_result['portfolio_duration']:.2f} years")
         print(
             f"  PV Matching Error: {abs(initial_result['portfolio_pv'] - initial_result['liability_pv']) / initial_result['liability_pv'] * 100:.2f}%"
         )
         print(
             f"  Duration Matching Error: {abs(initial_result['portfolio_duration'] - initial_result['liability_duration']):.3f} years"
         )
-        
+
         print("\n  Bond Allocations:")
         total_invested = 0
         for bond, qty in initial_result["bond_allocations"]:
@@ -150,23 +148,24 @@ def main():
     else:
         print("✗ Duration matching optimization failed")
 
-
     # Perform analysis and create visualizations
     if initial_result["success"] and duration_result["success"]:
         print("\n2. Risk Analysis and Visualizations")
         print("-" * 40)
-        
+
         # For duration matching analysis
         if duration_result["success"]:
             print("\n  Duration Matching Analysis:")
-            
+
             analyzer = HedgingAnalyzer(
                 liabilities, bonds, duration_result["quantities"], yield_curve
             )
-            
+
             # Sensitivity analysis
             shifts = np.linspace(-0.03, 0.03, 13)  # ±300 basis points
-            fig, sensitivity = analyzer.sensitivity_analysis(yield_shifts=shifts)
+            sensitivity_fig, sensitivity = analyzer.sensitivity_analysis(
+                yield_shifts=shifts
+            )
 
             # Extract key metrics
             tracking_errors = [abs(e) * 100 for e in sensitivity["tracking_errors"]]
@@ -199,30 +198,36 @@ def main():
             # Create visualizations
             print("\n3. Creating Visualizations...")
             print("   ✓ Sensitivity analysis created")
-            
+
             # Create portfolio comparison for duration matching
             duration_comparison_fig = analyzer.create_portfolio_comparison(
                 initial_quantities=initial_result["quantities"],
                 optimized_quantities=duration_result["quantities"],
-                optimization_type="Duration Matching"
+                optimization_type="Duration Matching",
             )
             print("   ✓ Duration matching portfolio comparison created")
-            
 
         # Save results
         print("\n4. Saving Results...")
         if duration_result["success"]:
-            fig.savefig("insurance_sensitivity.png", dpi=300, bbox_inches="tight")
-            duration_comparison_fig.savefig("duration_matching_comparison.png", dpi=300, bbox_inches="tight")
-        print("   ✓ Charts saved as PNG files")
+            sensitivity_fig.savefig(
+                "insurance_sensitivity.png", dpi=300, bbox_inches="tight"
+            )
+            duration_comparison_fig.savefig(
+                "duration_matching_comparison.png", dpi=300, bbox_inches="tight"
+            )
+        print("   ✓ The following charts have been saved as PNG files:")
+        print("      - insurance_sensitivity.png")
+        print("      - duration_matching_comparison.png")
 
     print("\n=== Analysis Complete ===")
 
     # Display charts
-    import matplotlib.pyplot as plt
+    if display_charts:
+        import matplotlib.pyplot as plt
 
-    plt.show()
+        plt.show()
 
 
 if __name__ == "__main__":
-    main()
+    main(display_charts=False)
