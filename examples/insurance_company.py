@@ -36,6 +36,9 @@ def create_bond_universe():
     """Create available bonds for investment."""
     # Government and corporate bonds with various maturities
     bonds = [
+        # Very short-term bonds for exact matching
+        Bond(maturity_years=0.5, coupon_rate=0.018, face_value=1000),
+        Bond(maturity_years=1.5, coupon_rate=0.023, face_value=1000),
         # Short-term bonds
         Bond(maturity_years=1, coupon_rate=0.020, face_value=1000),
         Bond(maturity_years=2, coupon_rate=0.025, face_value=1000),

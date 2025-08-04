@@ -20,21 +20,27 @@ def calculate_bond_cashflows(bond: Bond) -> list[tuple[float, float]]:
     # Annual coupon payments
     coupon_payment = bond.face_value * bond.coupon_rate
 
-    # Add coupon payments
-    for year in range(1, int(bond.maturity_years) + 1):
-        if year < bond.maturity_years:
-            cashflows.append((float(year), coupon_payment))
-        else:
-            # Final payment includes both coupon and principal
-            cashflows.append((float(year), coupon_payment + bond.face_value))
-
-    # Handle fractional final period if maturity is not whole number
-    if bond.maturity_years != int(bond.maturity_years):
-        # Remove the last added cashflow and recalculate
-        cashflows.pop()
-        fractional_period = bond.maturity_years - int(bond.maturity_years)
-        final_coupon = bond.face_value * bond.coupon_rate * fractional_period
+    # Handle bonds with maturity less than 1 year
+    if bond.maturity_years < 1:
+        # Single payment at maturity with prorated coupon
+        final_coupon = bond.face_value * bond.coupon_rate * bond.maturity_years
         cashflows.append((bond.maturity_years, final_coupon + bond.face_value))
+    else:
+        # Add coupon payments
+        for year in range(1, int(bond.maturity_years) + 1):
+            if year < bond.maturity_years:
+                cashflows.append((float(year), coupon_payment))
+            else:
+                # Final payment includes both coupon and principal
+                cashflows.append((float(year), coupon_payment + bond.face_value))
+
+        # Handle fractional final period if maturity is not whole number
+        if bond.maturity_years != int(bond.maturity_years):
+            # Remove the last added cashflow and recalculate
+            cashflows.pop()
+            fractional_period = bond.maturity_years - int(bond.maturity_years)
+            final_coupon = bond.face_value * bond.coupon_rate * fractional_period
+            cashflows.append((bond.maturity_years, final_coupon + bond.face_value))
 
     return cashflows
 
@@ -52,11 +58,11 @@ def calculate_present_value(
 
 def calculate_bond_present_value(bond: Bond, yield_curve: YieldCurve) -> float:
     """Calculate present value of a bond using its cashflows and the yield curve.
-    
+
     Args:
         bond: Bond object
         yield_curve: YieldCurve object for discounting
-    
+
     Returns:
         Present value of the bond
     """
@@ -131,7 +137,10 @@ class HedgingOptimizer:
 
         # Bond metrics
         bond_pvs = np.array(
-            [calculate_bond_present_value(bond, self.yield_curve) for bond in self.bonds]
+            [
+                calculate_bond_present_value(bond, self.yield_curve)
+                for bond in self.bonds
+            ]
         )
         bond_durations = np.array(
             [calculate_duration(bond, self.yield_curve) for bond in self.bonds]
@@ -159,7 +168,8 @@ class HedgingOptimizer:
         ]
 
         bounds = [(0, None) for _ in self.bonds]
-        x0 = np.ones(len(self.bonds))
+        # Better initial guess based on liability proportion
+        x0 = np.ones(len(self.bonds)) * (liability_pv / sum(bond_pvs))
 
         result = minimize(
             objective,
@@ -167,7 +177,7 @@ class HedgingOptimizer:
             method="SLSQP",
             constraints=constraints,
             bounds=bounds,
-            options={"disp": False, "maxiter": 1000},
+            options={"disp": False, "maxiter": 100, "ftol": 1e-6},
         )
 
         if not result.success:
@@ -233,7 +243,10 @@ class HedgingOptimizer:
 
         # Objective: minimize cost (present value of bonds)
         c = np.array(
-            [calculate_bond_present_value(bond, self.yield_curve) for bond in self.bonds]
+            [
+                calculate_bond_present_value(bond, self.yield_curve)
+                for bond in self.bonds
+            ]
         )
 
         # Solve linear program: min c'x subject to Ax >= b, x >= 0
