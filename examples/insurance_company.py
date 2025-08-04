@@ -78,13 +78,48 @@ def main():
     total_liability = sum(liability.amount for liability in liabilities)
     print(f"Total Liability Amount: €{total_liability:,.0f}k")
     print(f"Number of Liability Payments: {len(liabilities)}")
-    print(f"Time Horizon: {max(liability.time_years for liability in liabilities)} years\n")
+    print(
+        f"Time Horizon: {max(liability.time_years for liability in liabilities)} years\n"
+    )
 
     # Run both optimization strategies
     optimizer = HedgingOptimizer(liabilities, bonds, yield_curve)
+    
+    # First, create initial portfolio using maturity bucketing
+    print("0. Initial Portfolio (Maturity Bucketing)")
+    print("-" * 40)
+    initial_result = optimizer.create_initial_portfolio()
+    
+    if initial_result["success"]:
+        print("✓ Initial portfolio created")
+        print(f"  Liability PV: €{initial_result['liability_pv']:,.0f}k")
+        print(
+            f"  Liability Duration: {initial_result['liability_duration']:.2f} years"
+        )
+        print(f"  Portfolio PV: €{initial_result['portfolio_pv']:,.0f}k")
+        print(
+            f"  Portfolio Duration: {initial_result['portfolio_duration']:.2f} years"
+        )
+        print(
+            f"  PV Matching Error: {abs(initial_result['portfolio_pv'] - initial_result['liability_pv']) / initial_result['liability_pv'] * 100:.2f}%"
+        )
+        print(
+            f"  Duration Matching Error: {abs(initial_result['portfolio_duration'] - initial_result['liability_duration']):.3f} years"
+        )
+        
+        print("\n  Bond Allocations:")
+        total_invested = 0
+        for bond, qty in initial_result["bond_allocations"]:
+            value = qty * bond.face_value
+            total_invested += value
+            print(f"  - {bond}: {qty:,.0f} units (€{value:,.0f}k)")
+        print(f"  Total Investment Required: €{total_invested:,.0f}k")
+    else:
+        print("✗ Failed to create initial portfolio")
+        return
 
     # Duration matching
-    print("1. Duration Matching Strategy")
+    print("\n1. Duration Matching Strategy")
     print("-" * 40)
     duration_result = optimizer.duration_matching()
 
@@ -145,57 +180,89 @@ def main():
     else:
         print("✗ Cash flow matching optimization failed")
 
-    # Perform analysis on duration matching result
-    if duration_result["success"]:
-        print("\n3. Risk Analysis")
+    # Perform analysis and create visualizations
+    if initial_result["success"] and (duration_result["success"] or cashflow_result["success"]):
+        print("\n3. Risk Analysis and Visualizations")
         print("-" * 40)
+        
+        # For duration matching analysis
+        if duration_result["success"]:
+            print("\n  Duration Matching Analysis:")
+            
+            analyzer = HedgingAnalyzer(
+                liabilities, bonds, duration_result["quantities"], yield_curve
+            )
+            
+            # Sensitivity analysis
+            shifts = np.linspace(-0.03, 0.03, 13)  # ±300 basis points
+            fig, sensitivity = analyzer.sensitivity_analysis(yield_shifts=shifts)
 
-        analyzer = HedgingAnalyzer(
-            liabilities, bonds, duration_result["quantities"], yield_curve
-        )
+            # Extract key metrics
+            tracking_errors = [abs(e) * 100 for e in sensitivity["tracking_errors"]]
+            max_error = max(tracking_errors)
+            mean_error = np.mean(tracking_errors)
 
-        # Sensitivity analysis
-        shifts = np.linspace(-0.03, 0.03, 13)  # ±300 basis points
-        fig, sensitivity = analyzer.sensitivity_analysis(yield_shifts=shifts)
+            print("  Interest Rate Sensitivity (±300 bps):")
+            print(f"  - Maximum Tracking Error: {max_error:.2f}%")
+            print(f"  - Average Tracking Error: {mean_error:.2f}%")
+            print(f"  - Risk Reduction: ~{100 - max_error:.0f}%")
 
-        # Extract key metrics
-        tracking_errors = [abs(e) * 100 for e in sensitivity["tracking_errors"]]
-        max_error = max(tracking_errors)
-        mean_error = np.mean(tracking_errors)
+            # Value at risk
+            liability_changes = [
+                (pv / duration_result["liability_pv"] - 1) * 100
+                for pv in sensitivity["liability_pvs"]
+            ]
+            portfolio_changes = [
+                (pv / duration_result["portfolio_pv"] - 1) * 100
+                for pv in sensitivity["asset_pvs"]
+            ]
 
-        print("  Interest Rate Sensitivity (±300 bps):")
-        print(f"  - Maximum Tracking Error: {max_error:.2f}%")
-        print(f"  - Average Tracking Error: {mean_error:.2f}%")
-        print(f"  - Risk Reduction: ~{100 - max_error:.0f}%")
+            print("\n  Extreme Scenarios:")
+            print("  - If rates rise 300bps:")
+            print(f"    Liability value change: {liability_changes[-1]:.1f}%")
+            print(f"    Portfolio value change: {portfolio_changes[-1]:.1f}%")
+            print("  - If rates fall 300bps:")
+            print(f"    Liability value change: {liability_changes[0]:.1f}%")
+            print(f"    Portfolio value change: {portfolio_changes[0]:.1f}%")
 
-        # Value at risk
-        liability_changes = [
-            (pv / duration_result["liability_pv"] - 1) * 100
-            for pv in sensitivity["liability_pvs"]
-        ]
-        portfolio_changes = [
-            (pv / duration_result["portfolio_pv"] - 1) * 100
-            for pv in sensitivity["asset_pvs"]
-        ]
-
-        print("\n  Extreme Scenarios:")
-        print("  - If rates rise 300bps:")
-        print(f"    Liability value change: {liability_changes[-1]:.1f}%")
-        print(f"    Portfolio value change: {portfolio_changes[-1]:.1f}%")
-        print("  - If rates fall 300bps:")
-        print(f"    Liability value change: {liability_changes[0]:.1f}%")
-        print(f"    Portfolio value change: {portfolio_changes[0]:.1f}%")
-
-        # Create cashflow visualization
-        print("\n4. Creating Visualizations...")
-        cf_fig = analyzer.create_cashflow_comparison()
-        print("   ✓ Cashflow comparison created")
-        print("   ✓ Sensitivity analysis created")
+            # Create cashflow visualization
+            print("\n4. Creating Visualizations...")
+            cf_fig = analyzer.create_cashflow_comparison()
+            print("   ✓ Cashflow comparison created")
+            print("   ✓ Sensitivity analysis created")
+            
+            # Create portfolio comparison for duration matching
+            duration_comparison_fig = analyzer.create_portfolio_comparison(
+                initial_quantities=initial_result["quantities"],
+                optimized_quantities=duration_result["quantities"],
+                optimization_type="Duration Matching"
+            )
+            print("   ✓ Duration matching portfolio comparison created")
+            
+        # For cash flow matching analysis
+        if cashflow_result["success"]:
+            print("\n  Cash Flow Matching Analysis:")
+            
+            cf_analyzer = HedgingAnalyzer(
+                liabilities, bonds, cashflow_result["quantities"], yield_curve
+            )
+            
+            # Create portfolio comparison for cash flow matching
+            cashflow_comparison_fig = cf_analyzer.create_portfolio_comparison(
+                initial_quantities=initial_result["quantities"],
+                optimized_quantities=cashflow_result["quantities"],
+                optimization_type="Cash Flow Matching"
+            )
+            print("   ✓ Cash flow matching portfolio comparison created")
 
         # Save results
         print("\n5. Saving Results...")
-        cf_fig.savefig("insurance_cashflows.png", dpi=300, bbox_inches="tight")
-        fig.savefig("insurance_sensitivity.png", dpi=300, bbox_inches="tight")
+        if duration_result["success"]:
+            cf_fig.savefig("insurance_cashflows.png", dpi=300, bbox_inches="tight")
+            fig.savefig("insurance_sensitivity.png", dpi=300, bbox_inches="tight")
+            duration_comparison_fig.savefig("duration_matching_comparison.png", dpi=300, bbox_inches="tight")
+        if cashflow_result["success"]:
+            cashflow_comparison_fig.savefig("cashflow_matching_comparison.png", dpi=300, bbox_inches="tight")
         print("   ✓ Charts saved as PNG files")
 
     print("\n=== Analysis Complete ===")
