@@ -55,7 +55,7 @@ class HedgingAnalyzer:
             Tuple of (figure, results_dict)
         """
         # Import convexity calculation
-        from .optimizer import calculate_convexity
+        from .optimizer import calculate_bond_convexity
 
         # Base case values
         base_liability_pv = sum(
@@ -72,7 +72,7 @@ class HedgingAnalyzer:
         # Calculate base convexities
         base_asset_convexity = sum(
             qty
-            * calculate_convexity(bond, self.yield_curve)
+            * calculate_bond_convexity(bond, self.yield_curve)
             * calculate_bond_present_value(bond, self.yield_curve)
             / base_asset_pv
             for bond, qty in zip(self.bonds, self.quantities)
