@@ -216,7 +216,11 @@ class HedgingOptimizer:
         # Fill constraint matrix
         for i, t in enumerate(all_times):
             # Liability at time t
-            b[i] = sum(liability.amount for liability in self.liabilities)
+            b[i] = sum(
+                liability.amount
+                for liability in self.liabilities
+                if abs(liability.time_years - t) < 0.001
+            )
 
             # Bond cashflows at time t
             for j, bond in enumerate(self.bonds):
