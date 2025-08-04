@@ -70,6 +70,31 @@ def calculate_bond_present_value(bond: Bond, yield_curve: YieldCurve) -> float:
     return calculate_present_value(cashflows, yield_curve)
 
 
+def calculate_convexity(bond: Bond, yield_curve: YieldCurve) -> float:
+    """Calculate bond convexity (second derivative of price w.r.t. yield).
+    
+    Args:
+        bond: Bond object
+        yield_curve: YieldCurve object for discounting
+        
+    Returns:
+        Bond convexity in years squared
+    """
+    cashflows = calculate_bond_cashflows(bond)
+    bond_pv = calculate_bond_present_value(bond, yield_curve)
+    
+    if bond_pv == 0:
+        return 0
+    
+    convexity = 0.0
+    for time, amount in cashflows:
+        discount_factor = yield_curve.get_discount_factor(time)
+        # Convexity formula: sum of (t^2 + t) * CF * DF / PV
+        convexity += (time * time + time) * amount * discount_factor / bond_pv
+    
+    return convexity
+
+
 def calculate_duration(bond: Bond, yield_curve: YieldCurve) -> float:
     """Calculate modified duration of a bond."""
     cashflows = calculate_bond_cashflows(bond)
