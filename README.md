@@ -13,17 +13,45 @@ A professional-grade Python implementation for hedging liability cashflows using
 
 ## Quick Start
 
+### Prerequisites
+
+This project uses [UV](https://docs.astral.sh/uv/) as the package manager. UV is an extremely fast Python package and project manager, written in Rust.
+
+#### Installing UV
+
+You can install UV using one of the following methods:
+
+```bash
+# On macOS and Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# On Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Using pip (if you have Python already)
+pip install uv
+
+# Using Homebrew
+brew install uv
+```
+
+For more installation options, visit the [official UV documentation](https://docs.astral.sh/uv/).
+
 ### Installation
 
 ```bash
 # Install the package
-pip install -e .
+uv pip install -e .
 
 # Or install with development dependencies
-pip install -e ".[dev]"
+uv pip install -e ".[dev]"
 
 # Or install with all optional dependencies
-pip install -e ".[all]"
+uv pip install -e ".[all]"
+
+# Create and activate a virtual environment with UV
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 ### Basic Example
