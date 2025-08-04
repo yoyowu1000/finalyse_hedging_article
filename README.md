@@ -19,8 +19,6 @@ This project uses [UV](https://docs.astral.sh/uv/) as the package manager. UV is
 
 #### Installing UV
 
-You can install UV using one of the following methods:
-
 ```bash
 # On macOS and Linux
 curl -LsSf https://astral.sh/uv/install.sh | sh
