@@ -44,7 +44,7 @@ hedging programmatically helps us create a model that will help us understand ho
 
 ### Resources
 
-- code can be found here:
+- code can be found here: https://github.com/yoyowu1000/finalyse_hedging_article
 
 ## Core Concepts That Are Relevant
 
@@ -90,6 +90,8 @@ result = optimizer.duration_matching()
 The code handles all the calculations and returns optimal bond quantities that minimize interest rate risk.
 
 ### Explaining the Models
+
+TODO: Explain how models are setup up
 
 ### Explaining how optimisations works
 
