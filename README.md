@@ -28,9 +28,6 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # On Windows
 powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# Using pip (if you have Python already)
-pip install uv
-
 # Using Homebrew
 brew install uv
 ```
@@ -39,20 +36,20 @@ For more installation options, visit the [official UV documentation](https://doc
 
 ### Installation
 
+After installing UV, simply run:
+
 ```bash
-# Install the package
-uv pip install -e .
-
-# Or install with development dependencies
-uv pip install -e ".[dev]"
-
-# Or install with all optional dependencies
-uv pip install -e ".[all]"
-
-# Create and activate a virtual environment with UV
-uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+# TODO: TBU
+git clone <repository-url> 
+cd hedging_article
+uv sync
 ```
+
+That's it! `uv sync` will:
+
+- Create a virtual environment automatically
+- Install all dependencies with exact versions from the `uv.lock` file
+- Ensure your environment matches the project's requirements exactly
 
 ### Basic Example
 
