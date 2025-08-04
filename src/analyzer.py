@@ -7,7 +7,10 @@ import numpy as np
 import seaborn as sns
 
 from .models import Bond, Liability, YieldCurve
-from .optimizer import calculate_bond_cashflows, calculate_present_value
+from .optimizer import (
+    calculate_bond_cashflows,
+    calculate_bond_present_value,
+)
 
 # Set style for better-looking plots
 plt.style.use("seaborn-v0_8-darkgrid")
@@ -190,8 +193,7 @@ class HedgingAnalyzer:
         )
 
         base_asset_pv = sum(
-            qty
-            * calculate_present_value(calculate_bond_cashflows(bond), self.yield_curve)
+            qty * calculate_bond_present_value(bond, self.yield_curve)
             for bond, qty in zip(self.bonds, self.quantities)
         )
 
@@ -212,8 +214,7 @@ class HedgingAnalyzer:
             )
 
             asset_pv = sum(
-                qty
-                * calculate_present_value(calculate_bond_cashflows(bond), shifted_curve)
+                qty * calculate_bond_present_value(bond, shifted_curve)
                 for bond, qty in zip(self.bonds, self.quantities)
             )
 

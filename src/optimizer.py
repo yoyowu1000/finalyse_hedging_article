@@ -50,10 +50,24 @@ def calculate_present_value(
     return pv
 
 
+def calculate_bond_present_value(bond: Bond, yield_curve: YieldCurve) -> float:
+    """Calculate present value of a bond using its cashflows and the yield curve.
+    
+    Args:
+        bond: Bond object
+        yield_curve: YieldCurve object for discounting
+    
+    Returns:
+        Present value of the bond
+    """
+    cashflows = calculate_bond_cashflows(bond)
+    return calculate_present_value(cashflows, yield_curve)
+
+
 def calculate_duration(bond: Bond, yield_curve: YieldCurve) -> float:
     """Calculate modified duration of a bond."""
     cashflows = calculate_bond_cashflows(bond)
-    pv = calculate_present_value(cashflows, yield_curve)
+    pv = calculate_bond_present_value(bond, yield_curve)
 
     if pv == 0:
         return 0.0
@@ -117,12 +131,7 @@ class HedgingOptimizer:
 
         # Bond metrics
         bond_pvs = np.array(
-            [
-                calculate_present_value(
-                    calculate_bond_cashflows(bond), self.yield_curve
-                )
-                for bond in self.bonds
-            ]
+            [calculate_bond_present_value(bond, self.yield_curve) for bond in self.bonds]
         )
         bond_durations = np.array(
             [calculate_duration(bond, self.yield_curve) for bond in self.bonds]
@@ -220,12 +229,7 @@ class HedgingOptimizer:
 
         # Objective: minimize cost (present value of bonds)
         c = np.array(
-            [
-                calculate_present_value(
-                    calculate_bond_cashflows(bond), self.yield_curve
-                )
-                for bond in self.bonds
-            ]
+            [calculate_bond_present_value(bond, self.yield_curve) for bond in self.bonds]
         )
 
         # Solve linear program: min c'x subject to Ax >= b, x >= 0
