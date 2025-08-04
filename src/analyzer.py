@@ -321,35 +321,54 @@ Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv 
                 liability_times[liability.time_years] = 0
             liability_times[liability.time_years] += liability.amount
         
-        times = sorted(liability_times.keys())
-        amounts = [liability_times[t] for t in times]
+        # Calculate cashflows for both portfolios
+        initial_cashflows = calculate_bond_cashflows(initial_quantities)
+        optimized_cashflows = calculate_bond_cashflows(optimized_quantities)
         
-        bars = ax2.bar(times, amounts, width=0.5, alpha=0.8, color="#e74c3c", 
-                       label="Liability Cashflows")
+        # Get all unique times
+        all_times = sorted(set(list(liability_times.keys()) + 
+                             list(initial_cashflows.keys()) + 
+                             list(optimized_cashflows.keys())))
+        
+        # Prepare data for plotting
+        liability_amounts = [liability_times.get(t, 0) for t in all_times]
+        initial_amounts = [initial_cashflows.get(t, 0) for t in all_times]
+        optimized_amounts = [optimized_cashflows.get(t, 0) for t in all_times]
+        
+        # Plot grouped bars
+        x = np.arange(len(all_times))
+        width = 0.25
+        
+        bars1 = ax2.bar(x - width, liability_amounts, width, 
+                        label="Liabilities", alpha=0.8, color="#e74c3c")
+        bars2 = ax2.bar(x, initial_amounts, width, 
+                        label="Initial Portfolio", alpha=0.8, color="#ff7f0e")
+        bars3 = ax2.bar(x + width, optimized_amounts, width, 
+                        label="Optimized Portfolio", alpha=0.8, color="#2ca02c")
         
         ax2.set_xlabel("Time (Years)", fontsize=12)
-        ax2.set_ylabel("Amount (€)", fontsize=12)
-        ax2.set_title("Liability Cashflow Profile", fontsize=14, fontweight="bold")
-        ax2.legend(fontsize=12)
+        ax2.set_ylabel("Cash Flow Amount (€)", fontsize=12)
+        ax2.set_title("Cash Flow Profiles Comparison", fontsize=14, fontweight="bold")
+        ax2.set_xticks(x)
+        ax2.set_xticklabels([f"{t:.0f}" for t in all_times])
+        ax2.legend(fontsize=10)
         ax2.grid(True, alpha=0.3)
         
-        # Add value labels on bars
-        for bar in bars:
-            height = bar.get_height()
-            ax2.annotate(
-                f"€{height/1000:.0f}k",
-                xy=(bar.get_x() + bar.get_width() / 2, height),
-                xytext=(0, 3),
-                textcoords="offset points",
-                ha="center",
-                va="bottom",
-                fontsize=10,
-            )
-        
-        # Add PV and Duration info
-        ax2.text(0.02, 0.95, f"Total PV: €{liability_pv:,.0f}\nDuration: {liability_duration:.2f} years", 
-                transform=ax2.transAxes, fontsize=10, verticalalignment='top',
-                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+        # Add value labels on significant bars only
+        for bars in [bars1, bars2, bars3]:
+            for bar in bars:
+                height = bar.get_height()
+                if height > 100000:  # Only label significant cashflows
+                    ax2.annotate(
+                        f"€{height/1000:.0f}k",
+                        xy=(bar.get_x() + bar.get_width() / 2, height),
+                        xytext=(0, 3),
+                        textcoords="offset points",
+                        ha="center",
+                        va="bottom",
+                        fontsize=8,
+                        rotation=90 if height > 3000000 else 0
+                    )
 
         # 3. Key metrics comparison
         ax3 = fig.add_subplot(gs[2, 0])
@@ -428,9 +447,9 @@ Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv 
         ax4.legend(fontsize=10)
         ax4.grid(True, alpha=0.3)
 
-        # Add improvement percentages
+        # Add improvement percentages (excluding 100% improvements)
         for i, (initial, optimized) in enumerate(zip(initial_errors, optimized_errors)):
-            if initial > 0:
+            if initial > 0 and optimized > 0.001:  # Avoid showing 100% improvement
                 improvement = (initial - optimized) / initial * 100
                 ax4.text(
                     i,
