@@ -16,40 +16,25 @@ tags:
 
 # Hedging Liability Cashflows with Python: A Concise Guide
 
-## The $50 Million Wake-Up Call
+## Why Hedging is Necessary
 
-In March 2023, when the Federal Reserve raised rates by 0.5%, a mid-sized insurance company watched their $2 billion bond portfolio lose $50 million in value overnight. Their liabilities decreased too, but only by $30 million. The $20 million mismatch? That's what happens without proper hedging.
+typically, we take a risk where we want to achieve profits. and for insurance companies or for certain lines of business, we want to hedge out the risks that we believe won't create appropriate risk-adjusted returns. a clear example of this is interest rate risk for certain life insurance companies, where we sell annuities but don't want to take on the risk or market risk from investing in annuity funding.
 
-**[Image Suggestion 1: Before/After comparison chart showing unhedged vs hedged portfolio performance during rate increase]**
+## Why hedge programmatically
 
-This guide shows you how to build a Python-based hedging system that could have prevented 95% of that loss. Based on Redington's immunization theory (1952) and modern optimization techniques, our solution reduces interest rate risk while minimizing implementation costs.
+hedging programmatically helps us create a model that will help us understand how assets and liabilities relate to each other. with Python, it is relatively easier compared to other programming languages, and can help us sense-check results from other more sophisticated hedging applications, or simply create a script that we can run periodically to determine the appropriate hedging portfolio for say a small book of liabilities
 
-## The Business Case: Why Hedge?
+## Python Prerequisites & Limitations
 
-**The Problem:** Financial institutions hold billions in fixed-income assets to meet future obligations. When rates rise 1%, a typical 5-year duration portfolio loses 5% of its value—that's $50 million on every billion.
-
-**The Solution:** Duration matching creates a portfolio where asset and liability values move in tandem. Our Python implementation delivers:
-
-- **Risk Reduction**: 40-60% lower Value-at-Risk (VaR)
-- **Capital Savings**: $2-5 million annually per billion in assets (Solvency II capital relief)
-- **Automation Benefits**: 10 hours/month saved vs. manual rebalancing
-- **Error Prevention**: 90% fewer data input mistakes through validation
-
-**ROI Timeline**: Most institutions recover implementation costs within 6-8 months through capital savings alone.
-
-**[Image Suggestion 2: ROI timeline chart showing cumulative savings vs. implementation costs]**
-
-## Prerequisites & Limitations
+### Requirements
 
 **What You Need:**
 
 - Python 3.10+ environment
 - Historical yield curve data
 - Bond universe details (maturities, coupons)
-- IT team familiar with financial data pipelines
-- 2-4 weeks for implementation and testing
 
-**What This Doesn't Handle:**
+**What This Example Doesn't Handle:**
 
 - Credit risk (default probability)
 - Callable or convertible bonds
@@ -57,126 +42,63 @@ This guide shows you how to build a Python-based hedging system that could have 
 - Liquidity constraints
 - Non-parallel yield curve shifts (requires convexity adjustments)
 
-## Core Concepts Made Simple
+### Resources
+
+- code can be found here:
+
+## Core Concepts That Are Relevant
 
 ### Understanding the Building Blocks
 
-Think of duration as your portfolio's "speed limit" for interest rate changes. A 5-year duration means a 1% rate increase causes approximately 5% value loss. Convexity adds precision by capturing the curve's acceleration. By matching asset and liability durations and convexity, losses on one side offset gains on the other with enhanced accuracy.
+in our example, we'll focus more on duration, as specifically macauly duration, to match our liabilities and assets. 
 
-**[Image Suggestion 3: Visual analogy showing duration as a balance scale with assets and liabilities]**
+although not precise, duration can be seen as the sensitivity of your portfolio relative to interest rate changes. for example, a 5-year duration means that a 1% increase causes approximately 5% portfolio value loss
 
-Our implementation focuses on duration matching with convexity analysis:
+we also examine convexity, and convexity helps us understand the nonlinear relationship of our portfolio's price change relative to interest rate changes. in other words, it helps correct our assumption that prices change linearly when they don't
 
-| Strategy | Business Translation | Cost | Risk Reduction |
-|----------|---------------------|------|----------------|
-| **Duration Matching** | Match interest rate sensitivity with convexity precision | Lower | 85-90% effective |
+## Getting Started with the Code
 
-Duration matching with our 4-panel sensitivity analysis provides comprehensive risk visualization including convexity effects, making it the optimal choice for institutional portfolios.
+To begin hedging with Python, we'll use the example code from `examples/insurance_company.py`. Here's how we structure the key components:
 
-## Real-World Implementation
+**Creating Liabilities:**
 
-### Case Study: Regional Insurance Company
+```python
+liabilities = [
+    Liability(time_years=1, amount=1_000),  # €1M in 1 year
+    Liability(time_years=5, amount=2_500),  # €2.5M in 5 years
+    Liability(time_years=10, amount=3_200), # €3.2M in 10 years
+]
+```
 
-**Initial Situation (January 2024):**
+**Defining Available Bonds:**
 
-- $1.5 billion in policyholder liabilities
-- Unhedged duration mismatch: 2.5 years
-- Annual VaR (95%): $75 million
-- Solvency capital requirement: $120 million
+```python
+bonds = [
+    Bond(maturity_years=2, coupon_rate=0.025, face_value=1),
+    Bond(maturity_years=5, coupon_rate=0.032, face_value=1),
+    Bond(maturity_years=10, coupon_rate=0.038, face_value=1),
+]
+```
 
-**After Implementation (June 2024):**
+**Running the Optimization:**
 
-- Duration mismatch: < 0.1 years
-- Annual VaR (95%): $30 million (60% reduction)
-- Solvency capital requirement: $72 million
-- **Annual savings: $4.8 million in capital costs**
+```python
+optimizer = HedgingOptimizer(liabilities, bonds, yield_curve)
+result = optimizer.duration_matching()
+```
 
-**[Image Suggestion 4: Dashboard screenshot showing key risk metrics before/after hedging]**
+The code handles all the calculations and returns optimal bond quantities that minimize interest rate risk.
 
-The optimization recommended:
+### Explaining the Models
 
-- 30% in 2-year bonds (short-term obligation matching)
-- 45% in 5-year bonds (core duration matching)
-- 25% in 10-year bonds (long-tail liability coverage)
+### Explaining how optimisations works
 
-## Implementation Roadmap
-
-### Week 1-2: Setup and Integration
-
-1. IT team installs Python environment and dependencies
-2. Connect to existing data sources (Bloomberg, internal systems)
-3. Validate historical yield curves and bond data
-
-### Week 3: Configuration and Testing
-
-1. Input your liability schedule
-2. Define available bond universe
-3. Run test optimizations with historical data
-4. Validate results against existing models
-
-### Week 4: Production Deployment
-
-1. Implement automated daily runs
-2. Set up exception reporting
-3. Create management dashboards
-4. Train risk team on monitoring
-
-**[Image Suggestion 5: Gantt chart showing 4-week implementation timeline]**
-
-## Common Implementation Gotchas
-
-**Technical Challenges:**
-
-- **Solver Convergence**: Optimization may fail with extreme yield curves. Solution: Use multiple starting points
-- **Data Quality**: Missing bond data can skew results. Solution: Implement pre-optimization validation
-- **Fractional Bonds**: Optimizers suggest buying 1,234.56 bonds. Solution: Round to tradeable lots
-
-**Business Challenges:**
-
-- **Transaction Costs**: Budget 10-50 basis points for rebalancing
-- **Minimum Trade Sizes**: Some bonds trade in $1 million blocks
-- **Regulatory Approvals**: Allow 2-4 weeks for model validation by regulators
-
-## Monitoring and Maintenance
-
-**Monthly Tasks:**
-
-- Review duration drift (threshold: ±0.25 years)
-- Validate market data quality
-- Check optimization convergence rates
-
-**Quarterly Tasks:**
-
-- Rebalance if drift exceeds thresholds
-- Update liability projections
-- Stress test with rate scenarios
-
-**[Image Suggestion 6: Sample monitoring dashboard with drift indicators and alerts]**
-
-## Getting Started
-
-1. **Contact our team** for the complete codebase: `github.com/yoyowu1000/python-liability-hedging`
-2. **Schedule IT assessment** to review integration requirements
-3. **Run proof-of-concept** with your liability data
-4. **Present results** to risk committee with projected savings
-
-For technical teams, the repository includes:
-
-- Complete source code with institutional-grade error handling
-- Example configurations for insurance and pension funds
-- Comprehensive test suite with edge cases
-- Integration guides for Bloomberg and Reuters
+TODO: explain about the duration optimisation works
 
 ## Conclusion
 
-Interest rate hedging isn't optional in today's volatile environment. This Python implementation reduces risk by 40-60% while saving millions in regulatory capital. The modular design supports future enhancements like credit risk integration or multi-currency support.
+Interest rate hedging isn't optional in today's volatile environment. With the code snippets above that can be found in the repo, you now have a starting point to implement hedging that reduces risk while potentially saving significant regulatory capital. The code can be further enhanced to your organisational or personal requirements.
 
-Start with duration matching for immediate risk reduction, then expand based on your institution's specific needs. With proper implementation, you'll transform interest rate risk from a threat to a managed exposure.
+## Next Steps and Contact
 
----
-
-## References
-
-1. Redington, F.M. (1952). "Review of the Principles of Life-Office Valuations"
-2. Fabozzi, F.J. (2016). "Bond Markets, Analysis, and Strategies"
-3. Basel Committee on Banking Supervision (2023). "Interest Rate Risk in the Banking Book"
+please feel free to contact me at yuan-yow.wu@finalyse.com 
