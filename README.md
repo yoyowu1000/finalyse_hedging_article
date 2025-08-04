@@ -88,6 +88,7 @@ result = optimizer.duration_matching()
 ## Documentation
 
 See the [docs](docs/) folder for:
+
 - [API Reference](docs/api_reference.md)
 - [Troubleshooting Guide](docs/troubleshooting.md)
 
