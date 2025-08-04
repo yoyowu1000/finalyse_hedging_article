@@ -54,6 +54,9 @@ class HedgingAnalyzer:
         Returns:
             Tuple of (figure, results_dict)
         """
+        # Import convexity calculation
+        from .optimizer import calculate_convexity
+
         # Base case values
         base_liability_pv = sum(
             liability.amount
@@ -64,6 +67,25 @@ class HedgingAnalyzer:
         base_asset_pv = sum(
             qty * calculate_bond_present_value(bond, self.yield_curve)
             for bond, qty in zip(self.bonds, self.quantities)
+        )
+
+        # Calculate base convexities
+        base_asset_convexity = sum(
+            qty
+            * calculate_convexity(bond, self.yield_curve)
+            * calculate_bond_present_value(bond, self.yield_curve)
+            / base_asset_pv
+            for bond, qty in zip(self.bonds, self.quantities)
+            if qty > 0
+        )
+
+        # Liability convexity (simplified calculation)
+        base_liability_convexity = sum(
+            liability.amount
+            * (liability.time_years**2 + liability.time_years)
+            * self.yield_curve.get_discount_factor(liability.time_years)
+            / base_liability_pv
+            for liability in self.liabilities
         )
 
         # Calculate sensitivities
@@ -160,31 +182,84 @@ class HedgingAnalyzer:
         ax3.axhline(y=0, color="black", linestyle="--", alpha=0.5)
         ax3.axvline(x=0, color="black", linestyle="--", alpha=0.5)
 
-        # Summary statistics
-        ax4.axis("off")
-        summary_text = f"""Hedging Performance Summary:
-        
-Base Liability PV: €{base_liability_pv:,.0f}k
-Base Asset PV: €{base_asset_pv:,.0f}k
-Initial Hedge Ratio: {base_asset_pv / base_liability_pv:.4f}
-
-Tracking Error Statistics:
-Max Absolute Error: {max(abs(e) for e in tracking_errors) * 100:.2f}%
-Mean Absolute Error: {np.mean([abs(e) for e in tracking_errors]) * 100:.2f}%
-Standard Deviation: {np.std(tracking_errors) * 100:.2f}%
-
-Hedge Effectiveness:
-Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv - 1) for pv in liability_pvs])) * 100:.1f}%
-"""
-        ax4.text(
-            0.1,
-            0.9,
-            summary_text,
-            transform=ax4.transAxes,
-            fontsize=12,
+        # Add explanatory text for tracking error
+        ax3.text(
+            0.02,
+            0.98,
+            "Tracking Error = Asset PV% Change - Liability PV% Change\n"
+            + "(0% = perfect hedge, ±% = hedge mismatch)",
+            transform=ax3.transAxes,
+            fontsize=9,
             verticalalignment="top",
-            fontfamily="monospace",
-            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5),
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue", alpha=0.7),
+        )
+
+        # Convexity Analysis
+        ax4.set_title("Convexity Analysis", fontsize=14, fontweight="bold")
+
+        # Calculate convexity effect for each yield shift
+        convexity_effects = []
+        for shift in yield_shifts:
+            # Approximate PV change using duration and convexity
+            # ΔPV/PV ≈ -Duration × Δy + 0.5 × Convexity × (Δy)²
+            liability_convexity_effect = (
+                0.5 * base_liability_convexity * (shift**2) * 100
+            )
+            asset_convexity_effect = 0.5 * base_asset_convexity * (shift**2) * 100
+
+            # Net convexity effect (positive means assets benefit more from convexity)
+            net_convexity_effect = asset_convexity_effect - liability_convexity_effect
+            convexity_effects.append(net_convexity_effect)
+
+        # Plot convexity effects
+        ax4.plot(
+            yield_shifts * 100, convexity_effects, "orange", linewidth=2.5, marker="D"
+        )
+        ax4.axhline(y=0, color="black", linestyle="--", alpha=0.5)
+        ax4.axvline(x=0, color="black", linestyle="--", alpha=0.5)
+        ax4.set_xlabel("Yield Shift (basis points)", fontsize=12)
+        ax4.set_ylabel("Convexity Benefit (%)", fontsize=12)
+        ax4.grid(True, alpha=0.3)
+
+        # Add convexity values and explanation
+        convexity_text = (
+            f"Asset Convexity: {base_asset_convexity:.1f}\n"
+            + f"Liability Convexity: {base_liability_convexity:.1f}\n"
+            + f"Convexity Mismatch: {base_asset_convexity - base_liability_convexity:.1f}"
+        )
+
+        ax4.text(
+            0.02,
+            0.98,
+            convexity_text,
+            transform=ax4.transAxes,
+            fontsize=9,
+            verticalalignment="top",
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", alpha=0.7),
+        )
+
+        # Add explanation for convexity
+        if base_asset_convexity > base_liability_convexity:
+            explanation = "Higher asset convexity provides\nadditional protection in volatile markets"
+        else:
+            explanation = "Lower asset convexity may\nunderperform in volatile markets"
+
+        ax4.text(
+            0.98,
+            0.02,
+            explanation,
+            transform=ax4.transAxes,
+            fontsize=8,
+            verticalalignment="bottom",
+            horizontalalignment="right",
+            style="italic",
+            bbox=dict(
+                boxstyle="round,pad=0.3",
+                facecolor="lightgreen"
+                if base_asset_convexity > base_liability_convexity
+                else "lightcoral",
+                alpha=0.5,
+            ),
         )
 
         plt.tight_layout()
@@ -198,6 +273,9 @@ Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv 
             "asset_pvs": asset_pvs,
             "hedge_ratios": hedge_ratios,
             "tracking_errors": tracking_errors,
+            "asset_convexity": base_asset_convexity,
+            "liability_convexity": base_liability_convexity,
+            "convexity_effects": convexity_effects,
         }
 
     def create_portfolio_comparison(
@@ -260,8 +338,8 @@ Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv 
         optimized_pv, optimized_duration = calculate_metrics(optimized_quantities)
 
         # Create figure with subplots
-        fig = plt.figure(figsize=(18, 12))
-        gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 1], hspace=0.3, wspace=0.3)
+        fig = plt.figure(figsize=(18, 14))
+        gs = fig.add_gridspec(3, 2, height_ratios=[1, 1.2, 1], hspace=0.5, wspace=0.3)
 
         # 1. Bond allocation comparison
         ax1 = fig.add_subplot(gs[0, :])
@@ -288,13 +366,18 @@ Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv 
             color="#2ca02c",
         )
 
-        ax1.set_xlabel("Bonds", fontsize=12)
+        ax1.set_xlabel("Bonds", fontsize=12, labelpad=10)
         ax1.set_ylabel("Quantity", fontsize=12)
-        ax1.set_title("Bond Allocation Comparison", fontsize=14, fontweight="bold")
+        ax1.set_title(
+            "Bond Allocation Comparison", fontsize=14, fontweight="bold", pad=20
+        )
         ax1.set_xticks(x)
         ax1.set_xticklabels(bond_labels, rotation=45, ha="right")
         ax1.legend(fontsize=12)
         ax1.grid(True, alpha=0.3)
+
+        # Add extra bottom margin for rotated labels
+        ax1.margins(y=0.1)
 
         # Add value labels on bars
         for bars in [bars1, bars2]:
@@ -311,41 +394,81 @@ Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv 
                         fontsize=8,
                     )
 
-        # 2. Liability Cashflow Profile
+        # 2. Cash Flow Profiles Comparison
         ax2 = fig.add_subplot(gs[1, :])
-        
+
+        # Calculate bond cashflows for both portfolios
+        def calculate_bond_cashflows(quantities):
+            cashflow_times = {}
+            for bond, qty in zip(self.bonds, quantities):
+                if qty > 0:
+                    # Annual coupon payments
+                    for year in range(1, int(bond.maturity_years) + 1):
+                        time = float(year)
+                        if time not in cashflow_times:
+                            cashflow_times[time] = 0
+                        cashflow_times[time] += qty * bond.face_value * bond.coupon_rate
+
+                    # Principal repayment at maturity
+                    if bond.maturity_years not in cashflow_times:
+                        cashflow_times[bond.maturity_years] = 0
+                    cashflow_times[bond.maturity_years] += qty * bond.face_value
+            return cashflow_times
+
         # Group liabilities by time
         liability_times = {}
         for liability in self.liabilities:
             if liability.time_years not in liability_times:
                 liability_times[liability.time_years] = 0
             liability_times[liability.time_years] += liability.amount
-        
+
         # Calculate cashflows for both portfolios
         initial_cashflows = calculate_bond_cashflows(initial_quantities)
         optimized_cashflows = calculate_bond_cashflows(optimized_quantities)
-        
+
         # Get all unique times
-        all_times = sorted(set(list(liability_times.keys()) + 
-                             list(initial_cashflows.keys()) + 
-                             list(optimized_cashflows.keys())))
-        
+        all_times = sorted(
+            set(
+                list(liability_times.keys())
+                + list(initial_cashflows.keys())
+                + list(optimized_cashflows.keys())
+            )
+        )
+
         # Prepare data for plotting
         liability_amounts = [liability_times.get(t, 0) for t in all_times]
         initial_amounts = [initial_cashflows.get(t, 0) for t in all_times]
         optimized_amounts = [optimized_cashflows.get(t, 0) for t in all_times]
-        
+
         # Plot grouped bars
         x = np.arange(len(all_times))
         width = 0.25
-        
-        bars1 = ax2.bar(x - width, liability_amounts, width, 
-                        label="Liabilities", alpha=0.8, color="#e74c3c")
-        bars2 = ax2.bar(x, initial_amounts, width, 
-                        label="Initial Portfolio", alpha=0.8, color="#ff7f0e")
-        bars3 = ax2.bar(x + width, optimized_amounts, width, 
-                        label="Optimized Portfolio", alpha=0.8, color="#2ca02c")
-        
+
+        bars1 = ax2.bar(
+            x - width,
+            liability_amounts,
+            width,
+            label="Liabilities",
+            alpha=0.8,
+            color="#e74c3c",
+        )
+        bars2 = ax2.bar(
+            x,
+            initial_amounts,
+            width,
+            label="Initial Portfolio",
+            alpha=0.8,
+            color="#ff7f0e",
+        )
+        bars3 = ax2.bar(
+            x + width,
+            optimized_amounts,
+            width,
+            label="Optimized Portfolio",
+            alpha=0.8,
+            color="#2ca02c",
+        )
+
         ax2.set_xlabel("Time (Years)", fontsize=12)
         ax2.set_ylabel("Cash Flow Amount (€)", fontsize=12)
         ax2.set_title("Cash Flow Profiles Comparison", fontsize=14, fontweight="bold")
@@ -353,21 +476,21 @@ Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv 
         ax2.set_xticklabels([f"{t:.0f}" for t in all_times])
         ax2.legend(fontsize=10)
         ax2.grid(True, alpha=0.3)
-        
+
         # Add value labels on significant bars only
         for bars in [bars1, bars2, bars3]:
             for bar in bars:
                 height = bar.get_height()
                 if height > 100000:  # Only label significant cashflows
                     ax2.annotate(
-                        f"€{height/1000:.0f}k",
+                        f"€{height / 1000:.0f}k",
                         xy=(bar.get_x() + bar.get_width() / 2, height),
                         xytext=(0, 3),
                         textcoords="offset points",
                         ha="center",
                         va="bottom",
                         fontsize=8,
-                        rotation=90 if height > 3000000 else 0
+                        rotation=90 if height > 3000000 else 0,
                     )
 
         # 3. Key metrics comparison
