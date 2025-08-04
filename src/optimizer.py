@@ -97,7 +97,8 @@ class HedgingOptimizer:
         """
         # Calculate liability portfolio metrics
         liability_pv = sum(
-            liability.amount * self.yield_curve.get_discount_factor(liability.time_years)
+            liability.amount
+            * self.yield_curve.get_discount_factor(liability.time_years)
             for liability in self.liabilities
         )
 
@@ -186,7 +187,9 @@ class HedgingOptimizer:
             Dictionary with optimization results
         """
         # Create time grid
-        liability_times = sorted(set(liability.time_years for liability in self.liabilities))
+        liability_times = sorted(
+            set(liability.time_years for liability in self.liabilities)
+        )
         bond_cashflow_times = set()
         for bond in self.bonds:
             for t, _ in calculate_bond_cashflows(bond):
@@ -204,9 +207,7 @@ class HedgingOptimizer:
         # Fill constraint matrix
         for i, t in enumerate(all_times):
             # Liability at time t
-            b[i] = sum(
-                liability.amount for liability in self.liabilities if abs(liability.time_years - t) < 0.001
-            )
+            b[i] = sum(liability.amount for liability in self.liabilities)
 
             # Bond cashflows at time t
             for j, bond in enumerate(self.bonds):
