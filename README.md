@@ -1,11 +1,10 @@
 # Python Liability Hedging
 
-A professional-grade Python implementation for hedging liability cashflows using fixed-income portfolios. This library provides tools for duration matching, cash flow matching, and risk analysis with modern Python practices.
+A professional-grade Python implementation for hedging liability cashflows using fixed-income portfolios. This library provides tools for duration matching and risk analysis with modern Python practices.
 
 ## Features
 
 - **Duration Matching**: Minimize interest rate risk with ~90% effectiveness
-- **Cash Flow Matching**: Perfect hedge for critical liabilities
 - **Visualization**: Clear charts for stakeholder communication
 - **Validation**: Pydantic models prevent costly input errors
 - **Performance**: Optimized algorithms for institutional-scale portfolios

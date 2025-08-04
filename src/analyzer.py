@@ -8,7 +8,6 @@ import seaborn as sns
 
 from .models import Bond, Liability, YieldCurve
 from .optimizer import (
-    calculate_bond_cashflows,
     calculate_bond_present_value,
     calculate_duration,
 )
@@ -41,137 +40,6 @@ class HedgingAnalyzer:
         self.quantities = quantities
         self.yield_curve = yield_curve
 
-    def create_cashflow_comparison(self, save_path: Optional[str] = None) -> plt.Figure:
-        """Create detailed cashflow comparison chart.
-
-        Args:
-            save_path: Optional path to save the figure
-
-        Returns:
-            Matplotlib figure object
-        """
-        # Get all relevant time points
-        all_times = set()
-        for liability in self.liabilities:
-            all_times.add(liability.time_years)
-
-        for bond, qty in zip(self.bonds, self.quantities):
-            if qty > 0.01:
-                for time, _ in calculate_bond_cashflows(bond):
-                    all_times.add(time)
-
-        all_times = sorted(all_times)
-
-        # Calculate cashflows
-        liability_cfs = []
-        asset_cfs = []
-
-        for t in all_times:
-            # Liability cashflow
-            liability_cf = sum(
-                liability.amount for liability in self.liabilities if abs(liability.time_years - t) < 0.001
-            )
-            liability_cfs.append(liability_cf)
-
-            # Asset cashflow
-            asset_cf = 0
-            for bond, qty in zip(self.bonds, self.quantities):
-                bond_cf = sum(
-                    cf
-                    for time, cf in calculate_bond_cashflows(bond)
-                    if abs(time - t) < 0.001
-                )
-                asset_cf += bond_cf * qty
-            asset_cfs.append(asset_cf)
-
-        # Create visualization
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
-
-        # Cashflow comparison
-        x = np.arange(len(all_times))
-        width = 0.35
-
-        bars1 = ax1.bar(
-            x - width / 2,
-            liability_cfs,
-            width,
-            label="Liabilities",
-            alpha=0.8,
-            color="#e74c3c",
-        )
-        bars2 = ax1.bar(
-            x + width / 2,
-            asset_cfs,
-            width,
-            label="Hedging Portfolio",
-            alpha=0.8,
-            color="#3498db",
-        )
-
-        ax1.set_xlabel("Time (Years)", fontsize=12)
-        ax1.set_ylabel("Cash Flow (€ thousands)", fontsize=12)
-        ax1.set_title("Liability vs Asset Cash Flows", fontsize=14, fontweight="bold")
-        ax1.set_xticks(x)
-        ax1.set_xticklabels([f"{t:.1f}" for t in all_times])
-        ax1.legend(fontsize=12)
-        ax1.grid(True, alpha=0.3)
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"€{x:,.0f}k"))
-
-        # Add value labels on bars
-        for bars in [bars1, bars2]:
-            for bar in bars:
-                height = bar.get_height()
-                if height > 0:
-                    ax1.annotate(
-                        f"€{height:,.0f}k",
-                        xy=(bar.get_x() + bar.get_width() / 2, height),
-                        xytext=(0, 3),
-                        textcoords="offset points",
-                        ha="center",
-                        va="bottom",
-                        fontsize=9,
-                    )
-
-        # Mismatch analysis
-        mismatches = [
-            asset - liability for asset, liability in zip(asset_cfs, liability_cfs)
-        ]
-        colors = ["#27ae60" if m >= 0 else "#e74c3c" for m in mismatches]
-
-        bars3 = ax2.bar(x, mismatches, color=colors, alpha=0.8)
-        ax2.set_xlabel("Time (Years)", fontsize=12)
-        ax2.set_ylabel("Cash Flow Mismatch (€ thousands)", fontsize=12)
-        ax2.set_title(
-            "Hedging Effectiveness: Cash Flow Mismatches",
-            fontsize=14,
-            fontweight="bold",
-        )
-        ax2.set_xticks(x)
-        ax2.set_xticklabels([f"{t:.1f}" for t in all_times])
-        ax2.axhline(y=0, color="black", linestyle="-", linewidth=1)
-        ax2.grid(True, alpha=0.3)
-        ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"€{x:,.0f}k"))
-
-        # Add value labels
-        for bar in bars3:
-            height = bar.get_height()
-            if abs(height) > 0:
-                ax2.annotate(
-                    f"${height:,.0f}",
-                    xy=(bar.get_x() + bar.get_width() / 2, height),
-                    xytext=(0, 3 if height > 0 else -15),
-                    textcoords="offset points",
-                    ha="center",
-                    va="bottom" if height > 0 else "top",
-                    fontsize=9,
-                )
-
-        plt.tight_layout()
-
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches="tight")
-
-        return fig
 
     def sensitivity_analysis(
         self,
@@ -387,8 +255,8 @@ Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv 
         optimized_pv, optimized_duration = calculate_metrics(optimized_quantities)
         
         # Create figure with subplots
-        fig = plt.figure(figsize=(16, 12))
-        gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 1], hspace=0.3, wspace=0.3)
+        fig = plt.figure(figsize=(16, 10))
+        gs = fig.add_gridspec(2, 2, height_ratios=[1, 1], hspace=0.3, wspace=0.3)
         
         # 1. Bond allocation comparison
         ax1 = fig.add_subplot(gs[0, :])
@@ -473,59 +341,6 @@ Risk Reduction: {(1 - np.std(tracking_errors) / np.std([(pv / base_liability_pv 
                         f'{improvement:.0f}% improvement',
                         ha='center', fontsize=10, color='green' if improvement > 0 else 'red')
         
-        # 4. Cash flow matching quality
-        ax4 = fig.add_subplot(gs[2, :])
-        
-        # Calculate cash flows for both portfolios
-        all_times = sorted(set(liability.time_years for liability in self.liabilities))
-        
-        liability_cfs = []
-        initial_cfs = []
-        optimized_cfs = []
-        
-        for t in all_times:
-            # Liability cashflow
-            liability_cf = sum(
-                liability.amount for liability in self.liabilities 
-                if abs(liability.time_years - t) < 0.001
-            )
-            liability_cfs.append(liability_cf)
-            
-            # Initial portfolio cashflow
-            initial_cf = 0
-            for bond, qty in zip(self.bonds, initial_quantities):
-                bond_cf = sum(
-                    cf for time, cf in calculate_bond_cashflows(bond)
-                    if abs(time - t) < 0.001
-                )
-                initial_cf += bond_cf * qty
-            initial_cfs.append(initial_cf)
-            
-            # Optimized portfolio cashflow
-            optimized_cf = 0
-            for bond, qty in zip(self.bonds, optimized_quantities):
-                bond_cf = sum(
-                    cf for time, cf in calculate_bond_cashflows(bond)
-                    if abs(time - t) < 0.001
-                )
-                optimized_cf += bond_cf * qty
-            optimized_cfs.append(optimized_cf)
-        
-        x = np.arange(len(all_times))
-        width = 0.25
-        
-        ax4.bar(x - width, liability_cfs, width, label='Liabilities', alpha=0.8, color='#e74c3c')
-        ax4.bar(x, initial_cfs, width, label='Initial Portfolio', alpha=0.8, color='#ff7f0e')
-        ax4.bar(x + width, optimized_cfs, width, label='Optimized Portfolio', alpha=0.8, color='#2ca02c')
-        
-        ax4.set_xlabel('Time (Years)', fontsize=12)
-        ax4.set_ylabel('Cash Flow (€ thousands)', fontsize=12)
-        ax4.set_title(f'Cash Flow Comparison - {optimization_type}', fontsize=14, fontweight='bold')
-        ax4.set_xticks(x)
-        ax4.set_xticklabels([f'{t:.1f}' for t in all_times])
-        ax4.legend(fontsize=12)
-        ax4.grid(True, alpha=0.3)
-        ax4.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'€{x:,.0f}k'))
         
         # Add summary text
         summary_text = f"""

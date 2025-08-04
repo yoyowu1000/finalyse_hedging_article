@@ -63,14 +63,13 @@ Think of duration as your portfolio's "speed limit" for interest rate changes. A
 
 **[Image Suggestion 3: Visual analogy showing duration as a balance scale with assets and liabilities]**
 
-Our implementation offers two strategies:
+Our implementation focuses on duration matching:
 
 | Strategy | Business Translation | Cost | Risk Reduction |
 |----------|---------------------|------|----------------|
 | **Duration Matching** | Match the interest rate sensitivity | Lower | 85-90% effective |
-| **Cash Flow Matching** | Match every single payment | Higher | 100% effective |
 
-Most institutions choose duration matching for its cost-effectiveness, reserving cash flow matching for critical short-term obligations.
+Duration matching provides an excellent balance between cost-effectiveness and risk reduction, making it the preferred choice for most institutional portfolios.
 
 ## Real-World Implementation
 

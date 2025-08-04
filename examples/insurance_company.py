@@ -150,39 +150,10 @@ def main():
     else:
         print("✗ Duration matching optimization failed")
 
-    # Cash flow matching
-    print("\n2. Cash Flow Matching Strategy")
-    print("-" * 40)
-    cashflow_result = optimizer.cash_flow_matching()
-
-    if cashflow_result["success"]:
-        print("✓ Optimization successful")
-        print(f"  Total Cost: €{cashflow_result['total_cost']:,.0f}k")
-
-        print("\n  Bond Allocations:")
-        total_invested = 0
-        for bond, qty in cashflow_result["bond_allocations"]:
-            value = qty * bond.face_value
-            total_invested += value
-            print(f"  - {bond}: {qty:,.0f} units (€{value:,.0f}k)")
-        print(f"  Total Investment Required: €{total_invested:,.0f}k")
-
-        # Compare costs
-        duration_cost = (
-            duration_result["portfolio_pv"] if duration_result["success"] else 0
-        )
-        cashflow_cost = cashflow_result["total_cost"]
-        if duration_cost > 0:
-            cost_diff = (cashflow_cost - duration_cost) / duration_cost * 100
-            print(
-                f"\n  Cash flow matching is {cost_diff:.1f}% more expensive than duration matching"
-            )
-    else:
-        print("✗ Cash flow matching optimization failed")
 
     # Perform analysis and create visualizations
-    if initial_result["success"] and (duration_result["success"] or cashflow_result["success"]):
-        print("\n3. Risk Analysis and Visualizations")
+    if initial_result["success"] and duration_result["success"]:
+        print("\n2. Risk Analysis and Visualizations")
         print("-" * 40)
         
         # For duration matching analysis
@@ -225,10 +196,8 @@ def main():
             print(f"    Liability value change: {liability_changes[0]:.1f}%")
             print(f"    Portfolio value change: {portfolio_changes[0]:.1f}%")
 
-            # Create cashflow visualization
-            print("\n4. Creating Visualizations...")
-            cf_fig = analyzer.create_cashflow_comparison()
-            print("   ✓ Cashflow comparison created")
+            # Create visualizations
+            print("\n3. Creating Visualizations...")
             print("   ✓ Sensitivity analysis created")
             
             # Create portfolio comparison for duration matching
@@ -239,30 +208,12 @@ def main():
             )
             print("   ✓ Duration matching portfolio comparison created")
             
-        # For cash flow matching analysis
-        if cashflow_result["success"]:
-            print("\n  Cash Flow Matching Analysis:")
-            
-            cf_analyzer = HedgingAnalyzer(
-                liabilities, bonds, cashflow_result["quantities"], yield_curve
-            )
-            
-            # Create portfolio comparison for cash flow matching
-            cashflow_comparison_fig = cf_analyzer.create_portfolio_comparison(
-                initial_quantities=initial_result["quantities"],
-                optimized_quantities=cashflow_result["quantities"],
-                optimization_type="Cash Flow Matching"
-            )
-            print("   ✓ Cash flow matching portfolio comparison created")
 
         # Save results
-        print("\n5. Saving Results...")
+        print("\n4. Saving Results...")
         if duration_result["success"]:
-            cf_fig.savefig("insurance_cashflows.png", dpi=300, bbox_inches="tight")
             fig.savefig("insurance_sensitivity.png", dpi=300, bbox_inches="tight")
             duration_comparison_fig.savefig("duration_matching_comparison.png", dpi=300, bbox_inches="tight")
-        if cashflow_result["success"]:
-            cashflow_comparison_fig.savefig("cashflow_matching_comparison.png", dpi=300, bbox_inches="tight")
         print("   ✓ Charts saved as PNG files")
 
     print("\n=== Analysis Complete ===")

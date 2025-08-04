@@ -1,7 +1,7 @@
 """Optimization algorithms for liability hedging."""
 
 import numpy as np
-from scipy.optimize import minimize, linprog
+from scipy.optimize import minimize
 import warnings
 from .models import Liability, Bond, YieldCurve
 
@@ -199,80 +199,6 @@ class HedgingOptimizer:
             ],
         }
 
-    def cash_flow_matching(self) -> dict:
-        """Implements exact cash flow matching optimization.
-
-        Returns:
-            Dictionary with optimization results
-        """
-        # Create time grid
-        liability_times = sorted(
-            set(liability.time_years for liability in self.liabilities)
-        )
-        bond_cashflow_times = set()
-        for bond in self.bonds:
-            for t, _ in calculate_bond_cashflows(bond):
-                bond_cashflow_times.add(t)
-
-        all_times = sorted(liability_times)  # Only match at liability times
-
-        # Build constraint matrix
-        n_times = len(all_times)
-        n_bonds = len(self.bonds)
-
-        A = np.zeros((n_times, n_bonds))
-        b = np.zeros(n_times)
-
-        # Fill constraint matrix
-        for i, t in enumerate(all_times):
-            # Liability at time t
-            b[i] = sum(
-                liability.amount
-                for liability in self.liabilities
-                if abs(liability.time_years - t) < 0.001
-            )
-
-            # Bond cashflows at time t
-            for j, bond in enumerate(self.bonds):
-                bond_cf = sum(
-                    cf
-                    for time, cf in calculate_bond_cashflows(bond)
-                    if abs(time - t) < 0.001
-                )
-                A[i, j] = bond_cf
-
-        # Objective: minimize cost (present value of bonds)
-        c = np.array(
-            [
-                calculate_bond_present_value(bond, self.yield_curve)
-                for bond in self.bonds
-            ]
-        )
-
-        # Solve linear program: min c'x subject to Ax >= b, x >= 0
-        result = linprog(
-            c,
-            A_ub=-A,
-            b_ub=-b,
-            bounds=(0, None),
-            method="highs",
-            options={"disp": False},
-        )
-
-        if not result.success:
-            warnings.warn(f"Cash flow matching optimization failed: {result.message}")
-
-        # Calculate metrics
-        quantities = result.x if result.success else np.zeros(n_bonds)
-
-        return {
-            "quantities": quantities,
-            "success": result.success,
-            "total_cost": result.fun if result.success else 0,
-            "bond_allocations": [
-                (bond, qty) for bond, qty in zip(self.bonds, quantities) if qty > 0.01
-            ],
-        }
 
     def create_initial_portfolio(self) -> dict:
         """Create an initial unoptimized portfolio using maturity bucketing.
