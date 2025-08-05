@@ -567,7 +567,10 @@ class HedgingAnalyzer:
 
         # Add a legend
         ax3.legend(loc="upper left", fontsize=10)
-        ax3.grid(True, alpha=0.3, axis="y")
+        
+        # Remove grid to avoid horizontal lines
+        ax3.grid(False)
+        ax3_duration.grid(False)
 
         # 4. Tracking error improvement with dual scale
         ax4 = fig.add_subplot(gs[2, 1])
@@ -635,7 +638,10 @@ class HedgingAnalyzer:
         ax4.set_xticklabels(["PV Error", "Duration Error"])
         ax4.set_xlim(-0.6, 2.1)
         ax4.legend(loc="upper left", fontsize=10)
-        ax4.grid(True, alpha=0.3, axis="y")
+        
+        # Remove grid to avoid horizontal lines
+        ax4.grid(False)
+        ax4_duration.grid(False)
 
         # Add improvement percentages
         if initial_pv_error > 0 and optimized_pv_error > 0.001:
