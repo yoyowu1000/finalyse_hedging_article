@@ -17,13 +17,15 @@ tags:
 
 # Hedging Liability Cashflows with Python: A Concise Guide
 
+![insurance_sensitivity](insurance_sensitivity.png)
+
 ## Why Hedging is Necessary
 
-typically, we take a risk where we want to achieve profits. and for insurance companies or for certain lines of business, we want to hedge out the risks that we believe won't create appropriate risk-adjusted returns. a clear example of this is interest rate risk for certain life insurance companies, where we sell annuities but don't want to take on the risk or market risk from investing in annuity funding.
+Typically, we take risks where we want to achieve profits. For insurance companies or certain lines of business, we want to hedge out the risks that we believe won't create appropriate risk-adjusted returns. A clear example of this is interest rate risk for certain life insurance companies, where we sell annuities but don't want to take on the risk or market risk from investing in annuity funding.
 
-## Why hedge programmatically
+## Why Hedge Programmatically
 
-hedging programmatically helps us create a model that will help us understand how assets and liabilities relate to each other. with Python, it is relatively easier compared to other programming languages, and can help us sense-check results from other more sophisticated hedging applications, or simply create a script that we can run periodically to determine the appropriate hedging portfolio for say a small book of liabilities
+Hedging programmatically helps us create a model that will help us understand how assets and liabilities relate to each other. With Python, it is relatively easier compared to other programming languages, and can help us sense-check results from other more sophisticated hedging applications, or simply create a script that we can run periodically to determine the appropriate hedging portfolio for, say, a small book of liabilities.
 
 ## Python Prerequisites & Limitations
 
@@ -45,17 +47,17 @@ hedging programmatically helps us create a model that will help us understand ho
 
 ### Resources
 
-- code can be found here: https://github.com/yoyowu1000/finalyse_hedging_article
+- Code can be found here: <https://github.com/yoyowu1000/finalyse_hedging_article>
 
 ## Core Concepts That Are Relevant
 
 ### Understanding the Building Blocks
 
-in our example, we'll focus more on duration, as specifically macauly duration, to match our liabilities and assets. 
+In our example, we'll focus more on duration, specifically Macaulay duration, to match our liabilities and assets.
 
-although not precise, duration can be seen as the sensitivity of your portfolio relative to interest rate changes. for example, a 5-year duration means that a 1% increase causes approximately 5% portfolio value loss
+Duration can be seen, approximately, as the sensitivity of your portfolio relative to interest rate changes. For example, a 5-year duration means that a 1% increase causes approximately 5% portfolio value loss.
 
-we also examine convexity, and convexity helps us understand the nonlinear relationship of our portfolio's price change relative to interest rate changes. in other words, it helps correct our assumption that prices change linearly when they don't
+We also examine convexity, which helps us understand the nonlinear relationship of our portfolio's price change relative to interest rate changes. In other words, it helps correct our assumption that prices change linearly when they don't.
 
 ## Getting Started with the Code
 
@@ -126,7 +128,7 @@ YieldCurve(times=[1, 2, 5, 10], rates=[0.02, 0.025, 0.03, 0.035])
 
 These models work together: the YieldCurve provides discount rates, Bonds generate cashflows based on their terms, and Liabilities represent the obligations we need to hedge.
 
-### Explaining how optimisations works
+### Explaining How Optimization Works
 
 The duration matching optimization minimizes interest rate risk by aligning the weighted average duration of assets and liabilities:
 
@@ -135,16 +137,16 @@ The duration matching optimization minimizes interest rate risk by aligning the 
 1. **Calculate Liability Duration:**
    - Each liability's duration equals its time to payment
    - Portfolio duration = weighted average by present value
-   
+
 2. **Set Up the Objective:**
 
 ```python
    minimize: Σ(bond_quantities²)
 ```
 
-   - Minimizes concentration risk by penalizing large positions
-   - Duration matching is enforced through constraints, not the objective
-   - Results in a diversified portfolio spread across multiple bonds
+- Minimizes concentration risk by penalizing large positions
+- Duration matching is enforced through constraints, not the objective
+- Results in a diversified portfolio spread across multiple bonds
 
 1. **Apply Constraints:**
    - **Duration equality**: Portfolio duration = Liability duration (enforced as equality constraint)
@@ -164,11 +166,22 @@ The duration matching optimization minimizes interest rate risk by aligning the 
 ```
 
 **Why Duration Matching Works:**
+
 - When durations match, portfolio value changes from interest rate movements are approximately equal for assets and liabilities
 - A 1% rate increase affects both sides similarly, maintaining the funding ratio
 - Achieves 85-90% hedge effectiveness for parallel yield curve shifts
 
 The optimizer returns optimal bond quantities that create a self-financing portfolio with minimal interest rate sensitivity.
+
+## Results
+
+![duration_matching_comparison](duration_matching_comparison.png)
+
+In the above graph:
+
+- In the first sub-graph, we observe the bond allocation
+- In the second sub-graph, we observe the cash flow profile of the initial and optimized portfolio relative to the liability cash flows.
+- In the last sub-graphs, we can observe the changes and tracking error rleated to PV and Duration
 
 ## Conclusion
 
@@ -176,4 +189,4 @@ Interest rate hedging isn't optional in today's volatile environment. With the c
 
 ## Next Steps and Contact
 
-please feel free to contact me at yuan-yow.wu@finalyse.com 
+Please feel free to contact me at <yuan-yow.wu@finalyse.com>.
