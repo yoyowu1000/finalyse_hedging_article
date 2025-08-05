@@ -1,11 +1,10 @@
 # Python Liability Hedging
 
-A professional-grade Python implementation for hedging liability cashflows using fixed-income portfolios. This library provides tools for duration matching, cash flow matching, and risk analysis with modern Python practices.
+A professional-grade Python implementation for hedging liability cashflows using fixed-income portfolios. This library provides tools for duration matching and risk analysis with modern Python practices.
 
 ## Features
 
 - **Duration Matching**: Minimize interest rate risk with ~90% effectiveness
-- **Cash Flow Matching**: Perfect hedge for critical liabilities
 - **Visualization**: Clear charts for stakeholder communication
 - **Validation**: Pydantic models prevent costly input errors
 - **Performance**: Optimized algorithms for institutional-scale portfolios
@@ -13,18 +12,41 @@ A professional-grade Python implementation for hedging liability cashflows using
 
 ## Quick Start
 
-### Installation
+### Prerequisites
+
+This project uses [UV](https://docs.astral.sh/uv/) as the package manager. UV is an extremely fast Python package and project manager, written in Rust.
+
+#### Installing UV
 
 ```bash
-# Install the package
-pip install -e .
+# On macOS and Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Or install with development dependencies
-pip install -e ".[dev]"
+# On Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-# Or install with all optional dependencies
-pip install -e ".[all]"
+# Using Homebrew
+brew install uv
 ```
+
+For more installation options, visit the [official UV documentation](https://docs.astral.sh/uv/).
+
+### Installation
+
+After installing UV, simply run:
+
+```bash
+# TODO: TBU
+git clone <repository-url> 
+cd hedging_article
+uv sync
+```
+
+That's it! `uv sync` will:
+
+- Create a virtual environment automatically
+- Install all dependencies with exact versions from the `uv.lock` file
+- Ensure your environment matches the project's requirements exactly
 
 ### Basic Example
 
@@ -65,6 +87,7 @@ result = optimizer.duration_matching()
 ## Documentation
 
 See the [docs](docs/) folder for:
+
 - [API Reference](docs/api_reference.md)
 - [Troubleshooting Guide](docs/troubleshooting.md)
 

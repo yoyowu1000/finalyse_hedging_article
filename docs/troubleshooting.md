@@ -11,7 +11,7 @@
 - **No feasible solution exists**
   - Add more bonds with different maturities
   - Check if liability duration is outside the range of available bonds
-  - Try cash flow matching instead
+  - Consider adjusting the optimization constraints
 
 - **Numerical issues**
   - Scale your amounts (use thousands or millions instead of units)
@@ -49,7 +49,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 **Solutions**:
 - Process in batches
 - Use sparse matrices for very large problems
-- Reduce the number of time points in cash flow matching
+- Optimize the number of bonds in the portfolio
 
 ### 5. Visualization Issues
 
@@ -70,8 +70,8 @@ fig.savefig('output.png', dpi=300, bbox_inches='tight')
 **Symptom**: Optimization takes too long
 
 **Solutions**:
-- Use duration matching instead of cash flow matching
 - Reduce the number of bonds in the universe
+- Consider simplifying the optimization problem
 - Set looser convergence criteria:
   ```python
   result = minimize(..., options={'ftol': 1e-6})
