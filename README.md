@@ -89,16 +89,3 @@ python -m pytest tests/
 ## License
 
 MIT License - See LICENSE file for details
-
-## Citation
-
-If you use this code in your research, please cite:
-
-```
-@article{yoyowu2025hedging,
-  title={Hedging Liability Cashflows with Python},
-  author={yoyowu1000},
-  year={2025},
-  url={https://github.com/yoyowu1000/python-liability-hedging}
-}
-```
