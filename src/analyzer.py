@@ -495,12 +495,12 @@ class HedgingAnalyzer:
 
         # 3. Key metrics comparison with dual scale
         ax3 = fig.add_subplot(gs[2, 0])
-        
+
         # Create separate x positions for PV and Duration
         x_pv = 0
         x_duration = 1.5
         width = 0.25
-        
+
         # Create the main axis for Present Value
         ax3.bar(
             x_pv - width,
@@ -521,17 +521,14 @@ class HedgingAnalyzer:
             alpha=0.8,
             color="#e74c3c",
         )
-        
+
         ax3.set_ylabel("Present Value (€)", fontsize=12, color="black")
-        ax3.tick_params(axis='y', labelcolor="black")
+        ax3.tick_params(axis="y", labelcolor="black")
         ax3.set_title("Portfolio Metrics Comparison", fontsize=14, fontweight="bold")
-        
-        # Format y-axis for thousands
-        ax3.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:,.0f}'))
-        
+
         # Create a second y-axis for Duration
         ax3_duration = ax3.twinx()
-        
+
         ax3_duration.bar(
             x_duration - width,
             initial_duration,
@@ -542,7 +539,11 @@ class HedgingAnalyzer:
             linewidth=2,
         )
         ax3_duration.bar(
-            x_duration, optimized_duration, width, alpha=0.8, color="#2ca02c",
+            x_duration,
+            optimized_duration,
+            width,
+            alpha=0.8,
+            color="#2ca02c",
             edgecolor="black",
             linewidth=2,
         )
@@ -555,28 +556,25 @@ class HedgingAnalyzer:
             edgecolor="black",
             linewidth=2,
         )
-        
+
         ax3_duration.set_ylabel("Duration (years)", fontsize=12, color="darkblue")
-        ax3_duration.tick_params(axis='y', labelcolor="darkblue")
-        
+        ax3_duration.tick_params(axis="y", labelcolor="darkblue")
+
         # Set x-axis labels
         ax3.set_xticks([x_pv, x_duration])
         ax3.set_xticklabels(["Present Value", "Duration"])
         ax3.set_xlim(-0.6, 2.1)
-        
+
         # Add a legend
-        ax3.legend(loc='upper left', fontsize=10)
-        
-        # Remove grid to avoid horizontal lines
-        ax3.grid(False)
-        ax3_duration.grid(False)
+        ax3.legend(loc="upper left", fontsize=10)
+        ax3.grid(True, alpha=0.3, axis="y")
 
         # 4. Tracking error improvement with dual scale
         ax4 = fig.add_subplot(gs[2, 1])
 
         # Calculate tracking errors
-        initial_pv_error = abs(initial_pv - liability_pv) / liability_pv * 100
-        optimized_pv_error = abs(optimized_pv - liability_pv) / liability_pv * 100
+        initial_pv_error = round(abs(initial_pv - liability_pv) / liability_pv * 100, 2)
+        optimized_pv_error = round(abs(optimized_pv - liability_pv) / liability_pv * 100, 2)
         initial_duration_error = abs(initial_duration - liability_duration)
         optimized_duration_error = abs(optimized_duration - liability_duration)
 
@@ -592,7 +590,7 @@ class HedgingAnalyzer:
             width,
             label="Initial",
             alpha=0.8,
-            color="#ff7f0e",
+            color="#ff7f0e",  # todo: replace with var
         )
         ax4.bar(
             x_pv_error + width / 2,
@@ -600,16 +598,16 @@ class HedgingAnalyzer:
             width,
             label="Optimized",
             alpha=0.8,
-            color="#2ca02c",
+            color="#2ca02c",  # todo: replace with var
         )
 
         ax4.set_ylabel("PV Error (%)", fontsize=12, color="black")
-        ax4.tick_params(axis='y', labelcolor="black")
+        ax4.tick_params(axis="y", labelcolor="black")
         ax4.set_title("Tracking Error Comparison", fontsize=14, fontweight="bold")
 
         # Second y-axis for Duration Error
         ax4_duration = ax4.twinx()
-        
+
         ax4_duration.bar(
             x_duration_error - width / 2,
             initial_duration_error,
@@ -630,21 +628,20 @@ class HedgingAnalyzer:
         )
 
         ax4_duration.set_ylabel("Duration Error (years)", fontsize=12, color="darkblue")
-        ax4_duration.tick_params(axis='y', labelcolor="darkblue")
+        ax4_duration.tick_params(axis="y", labelcolor="darkblue")
 
         # Set x-axis
         ax4.set_xticks([x_pv_error, x_duration_error])
         ax4.set_xticklabels(["PV Error", "Duration Error"])
         ax4.set_xlim(-0.6, 2.1)
-        ax4.legend(loc='upper left', fontsize=10)
-        
-        # Remove grid to avoid horizontal lines
-        ax4.grid(False)
-        ax4_duration.grid(False)
+        ax4.legend(loc="upper left", fontsize=10)
+        ax4.grid(True, alpha=0.3, axis="y")
 
         # Add improvement percentages
         if initial_pv_error > 0 and optimized_pv_error > 0.001:
-            pv_improvement = (initial_pv_error - optimized_pv_error) / initial_pv_error * 100
+            pv_improvement = (
+                (initial_pv_error - optimized_pv_error) / initial_pv_error * 100
+            )
             ax4.text(
                 x_pv_error,
                 max(initial_pv_error, optimized_pv_error) * 1.1,
@@ -653,9 +650,13 @@ class HedgingAnalyzer:
                 fontsize=10,
                 color="green" if pv_improvement > 0 else "red",
             )
-        
+
         if initial_duration_error > 0 and optimized_duration_error > 0.001:
-            dur_improvement = (initial_duration_error - optimized_duration_error) / initial_duration_error * 100
+            dur_improvement = (
+                (initial_duration_error - optimized_duration_error)
+                / initial_duration_error
+                * 100
+            )
             ax4_duration.text(
                 x_duration_error,
                 max(initial_duration_error, optimized_duration_error) * 1.1,
