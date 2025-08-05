@@ -77,7 +77,7 @@ result = optimizer.duration_matching()
 ## Examples
 
 - `examples/quick_start.py` - Minimal working example
-- `examples/insurance_company.py` - Real-world insurance case study
+- `examples/insurance_company.py` - An example insurance case study
 
 ## Testing
 
