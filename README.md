@@ -1,14 +1,12 @@
 # Python Liability Hedging
 
-A professional-grade Python implementation for hedging liability cashflows using fixed-income portfolios. This library provides tools for duration matching and risk analysis with modern Python practices.
+An example Python implementation showing how to hedge liability cash flows with bonds. This library demonstrates duration matching techniques for managing interest rate risk.
 
 ## Features
 
-- **Duration Matching**: Minimize interest rate risk with ~90% effectiveness
-- **Visualization**: Clear charts for stakeholder communication
-- **Validation**: Pydantic models prevent costly input errors
-- **Performance**: Optimized algorithms for institutional-scale portfolios
-- **Extensible**: Modular design for custom strategies
+- **Duration Matching**
+- **Visualization**
+- **Validation with Pydantic**
 
 ## Quick Start
 
@@ -81,15 +79,6 @@ result = optimizer.duration_matching()
 
 - `examples/quick_start.py` - Minimal working example
 - `examples/insurance_company.py` - Real-world insurance case study
-- `examples/pension_fund.py` - Pension obligation hedging
-- `examples/template.py` - Customizable template for your use case
-
-## Documentation
-
-See the [docs](docs/) folder for:
-
-- [API Reference](docs/api_reference.md)
-- [Troubleshooting Guide](docs/troubleshooting.md)
 
 ## Testing
 
