@@ -34,13 +34,12 @@ For more installation options, visit the [official UV documentation](https://doc
 After installing UV, simply run:
 
 ```bash
-# TODO: TBU
-git clone <repository-url> 
-cd hedging_article
+git clone https://github.com/yoyowu1000/finalyse_hedging_article.git
+cd finalyse_hedging_article
 uv sync
 ```
 
-That's it! `uv sync` will:
+`uv sync` will:
 
 - Create a virtual environment automatically
 - Install all dependencies with exact versions from the `uv.lock` file
