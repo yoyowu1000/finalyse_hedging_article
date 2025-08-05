@@ -70,28 +70,28 @@ def calculate_bond_present_value(bond: Bond, yield_curve: YieldCurve) -> float:
     return calculate_present_value(cashflows, yield_curve)
 
 
-def calculate_bond_convexity(bond: Bond, yield_curve: YieldCurve) -> float:
+def calculate_convexity(bond: Bond, yield_curve: YieldCurve) -> float:
     """Calculate bond convexity (second derivative of price w.r.t. yield).
-
+    
     Args:
         bond: Bond object
         yield_curve: YieldCurve object for discounting
-
+        
     Returns:
         Bond convexity in years squared
     """
     cashflows = calculate_bond_cashflows(bond)
     bond_pv = calculate_bond_present_value(bond, yield_curve)
-
+    
     if bond_pv == 0:
         return 0
-
+    
     convexity = 0.0
     for time, amount in cashflows:
         discount_factor = yield_curve.get_discount_factor(time)
         # Convexity formula: sum of (t^2 + t) * CF * DF / PV
         convexity += (time * time + time) * amount * discount_factor / bond_pv
-
+    
     return convexity
 
 
@@ -224,45 +224,44 @@ class HedgingOptimizer:
             ],
         }
 
+
     def create_initial_portfolio(self) -> dict:
         """Create an initial unoptimized portfolio using maturity bucketing.
-
+        
         This represents a naive approach where bonds are allocated based on
         maturity buckets to roughly match liability timings.
-
+        
         Returns:
             Dictionary with portfolio details
         """
         # Calculate total liability PV
         liability_pv = sum(
-            liability.amount
-            * self.yield_curve.get_discount_factor(liability.time_years)
+            liability.amount * self.yield_curve.get_discount_factor(liability.time_years)
             for liability in self.liabilities
         )
-
+        
         # Create maturity buckets for liabilities
         liability_buckets = {}
         bucket_size = 2.0  # 2-year buckets
-
+        
         for liability in self.liabilities:
             bucket = int(liability.time_years / bucket_size) * bucket_size
             if bucket not in liability_buckets:
                 liability_buckets[bucket] = []
             liability_buckets[bucket].append(liability)
-
+        
         # Calculate PV for each bucket
         bucket_pvs = {}
         for bucket, liabs in liability_buckets.items():
             bucket_pv = sum(
-                liability.amount
-                * self.yield_curve.get_discount_factor(liability.time_years)
+                liability.amount * self.yield_curve.get_discount_factor(liability.time_years)
                 for liability in liabs
             )
             bucket_pvs[bucket] = bucket_pv
-
+        
         # Allocate bonds to buckets based on maturity
         bond_allocations = np.zeros(len(self.bonds))
-
+        
         for bucket, target_pv in bucket_pvs.items():
             # Find bonds with maturities close to this bucket
             bucket_bonds = []
@@ -270,11 +269,11 @@ class HedgingOptimizer:
                 bond_bucket = int(bond.maturity_years / bucket_size) * bucket_size
                 if abs(bond_bucket - bucket) <= bucket_size:
                     bucket_bonds.append((i, bond))
-
+            
             if not bucket_bonds:
                 # If no bonds in this bucket, use all bonds
                 bucket_bonds = [(i, bond) for i, bond in enumerate(self.bonds)]
-
+            
             # Allocate proportionally among bonds in this bucket
             if bucket_bonds:
                 # Calculate total PV of bonds in bucket (per unit)
@@ -283,31 +282,29 @@ class HedgingOptimizer:
                     for _, bond in bucket_bonds
                 ]
                 total_bucket_bond_pv = sum(bucket_bond_pvs)
-
+                
                 # Allocate to match target PV
                 for (idx, bond), bond_pv in zip(bucket_bonds, bucket_bond_pvs):
                     if total_bucket_bond_pv > 0:
-                        allocation = (
-                            target_pv * bond_pv / total_bucket_bond_pv
-                        ) / bond_pv
+                        allocation = (target_pv * bond_pv / total_bucket_bond_pv) / bond_pv
                         bond_allocations[idx] += allocation
-
+        
         # Scale allocations to match total liability PV exactly
         current_pv = sum(
             qty * calculate_bond_present_value(bond, self.yield_curve)
             for bond, qty in zip(self.bonds, bond_allocations)
         )
-
+        
         if current_pv > 0:
             scaling_factor = liability_pv / current_pv
             bond_allocations *= scaling_factor
-
+        
         # Calculate portfolio metrics
         portfolio_pv = sum(
             qty * calculate_bond_present_value(bond, self.yield_curve)
             for bond, qty in zip(self.bonds, bond_allocations)
         )
-
+        
         # Calculate portfolio duration
         portfolio_duration = 0
         if portfolio_pv > 0:
@@ -316,7 +313,7 @@ class HedgingOptimizer:
                     bond_pv = calculate_bond_present_value(bond, self.yield_curve)
                     bond_duration = calculate_duration(bond, self.yield_curve)
                     portfolio_duration += (qty * bond_pv * bond_duration) / portfolio_pv
-
+        
         # Calculate liability duration for comparison
         liability_duration = (
             sum(
@@ -327,7 +324,7 @@ class HedgingOptimizer:
             )
             / liability_pv
         )
-
+        
         return {
             "quantities": bond_allocations,
             "success": True,
@@ -336,9 +333,7 @@ class HedgingOptimizer:
             "portfolio_pv": portfolio_pv,
             "portfolio_duration": portfolio_duration,
             "bond_allocations": [
-                (bond, qty)
-                for bond, qty in zip(self.bonds, bond_allocations)
-                if qty > 0.01
+                (bond, qty) for bond, qty in zip(self.bonds, bond_allocations) if qty > 0.01
             ],
             "strategy": "maturity_bucketing",
         }
