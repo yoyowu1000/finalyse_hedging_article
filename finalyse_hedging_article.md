@@ -1,6 +1,6 @@
 ---
-created: 2025-08-05
-edited: 2025-08-05
+created: "2025-08-05"
+edited: "2025-08-07"
 modified:
   - 2025-06-19
   - 2025-06-29
@@ -12,12 +12,12 @@ aliases:
   - "Hedging Liability Cashflows with Python: A Concise Guide"
   - Python Hedging Tutorial v3
 tags:
-  - para/pro/finalyse/proj/2025/interest-rate-article
+  - para/pro/finalyse/proj/internal/interest-rate-article
 ---
 
 # Hedging Liability Cashflows with Python: A Concise Guide
 
-![insurance_sensitivity](insurance_sensitivity.png)
+![Figure 1: Example of portfolio sensitivity for insurance company](insurance_sensitivity.png)
 
 ## Why Hedging is Necessary
 
@@ -67,9 +67,19 @@ To begin hedging with Python, we'll use the example code from `examples/insuranc
 
 ```python
 liabilities = [
-    Liability(time_years=1, amount=1_000),  # €1M in 1 year
-    Liability(time_years=5, amount=2_500),  # €2.5M in 5 years
-    Liability(time_years=10, amount=3_200), # €3.2M in 10 years
+        # Short-term death benefits
+        Liability(time_years=0.5, amount=500),  # €500k
+        Liability(time_years=1, amount=1_000),  # €1,000k
+        Liability(time_years=1.5, amount=750),  # €750k
+        # Medium-term annuity payments
+        Liability(time_years=3, amount=2_500),  # €2,500k
+        Liability(time_years=4, amount=2_200),  # €2,200k
+        Liability(time_years=5, amount=1_800),  # €1,800k
+        # Long-term endowments and pensions
+        Liability(time_years=7, amount=3_000),  # €3,000k
+        Liability(time_years=10, amount=3_200),  # €3,200k
+        Liability(time_years=15, amount=4_500),  # €4,500k
+        Liability(time_years=20, amount=5_000),  # €5,000k
 ]
 ```
 
@@ -77,15 +87,32 @@ liabilities = [
 
 ```python
 bonds = [
-    Bond(maturity_years=2, coupon_rate=0.025, face_value=1),
-    Bond(maturity_years=5, coupon_rate=0.032, face_value=1),
-    Bond(maturity_years=10, coupon_rate=0.038, face_value=1),
+        # Very short-term bonds
+        Bond(maturity_years=0.5, coupon_rate=0.018, face_value=1),
+        Bond(maturity_years=1.5, coupon_rate=0.023, face_value=1),
+        # Short-term bonds
+        Bond(maturity_years=1, coupon_rate=0.020, face_value=1),
+        Bond(maturity_years=2, coupon_rate=0.025, face_value=1),
+        # Medium-term bonds
+        Bond(maturity_years=3, coupon_rate=0.028, face_value=1),
+        Bond(maturity_years=5, coupon_rate=0.032, face_value=1),
+        Bond(maturity_years=7, coupon_rate=0.035, face_value=1),
+        # Long-term bonds
+        Bond(maturity_years=10, coupon_rate=0.038, face_value=1),
+        Bond(maturity_years=15, coupon_rate=0.042, face_value=1),
+        Bond(maturity_years=20, coupon_rate=0.045, face_value=1),
 ]
 ```
 
-**Running the Optimization:**
+**Defining the Yield curve and Running the Optimization:**
 
 ```python
+
+yield_curve = YieldCurve(
+        times=[0.5, 1, 2, 3, 5, 7, 10, 15, 20, 30],
+        rates=[0.018, 0.020, 0.025, 0.028, 0.032, 0.035, 0.038, 0.042, 0.045, 0.048],
+    )
+
 optimizer = HedgingOptimizer(liabilities, bonds, yield_curve)
 result = optimizer.duration_matching()
 ```
@@ -175,7 +202,9 @@ The optimizer returns optimal bond quantities that create a self-financing portf
 
 ## Results
 
-![duration_matching_comparison](duration_matching_comparison.png)
+Running `uv run python examples/insurance_company.py` will yield the following results:
+
+![Figure 2: Results of optimization with duration matching constraint](duration_matching_comparison.png)
 
 In the above graph:
 

@@ -39,7 +39,7 @@ def create_bond_universe():
     # Government and corporate bonds with various maturities
     # Face value of 1 = €1,000 (since we're working in thousands)
     bonds = [
-        # Very short-term bonds for exact matching
+        # Very short-term bonds
         Bond(maturity_years=0.5, coupon_rate=0.018, face_value=1),
         Bond(maturity_years=1.5, coupon_rate=0.023, face_value=1),
         # Short-term bonds
